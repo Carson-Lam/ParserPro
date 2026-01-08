@@ -1,0 +1,305 @@
+/* Styling for the body and text */
+body {
+   font-family: Arial, sans-serif;
+}
+
+
+/* Container for the bars */
+#arrayContainer {
+   margin-top: 20px;
+   display: flex;
+   justify-content: center;
+   align-items: flex-end;
+   /* Ensure bars are aligned at the bottom */
+   flex-wrap: wrap;
+   width: 80%;
+   margin: 0 auto;
+   position: relative;
+}
+
+
+/* Styling for each bar */
+.bar {
+   display: inline-block;
+   position: relative;
+   width: 30px;
+   /* Fixed width for bars */
+   margin: 2px;
+   background-color: red;
+   /* Default bar color is red */
+   transition: height 0.3s ease, background-color 0.3s ease;
+}
+
+
+/* Text in the bars */
+.bar-value {
+   position: absolute;
+   bottom: 0;
+   left: 0;
+   right: 0;
+   top: 0;
+   margin: auto;
+   text-align: center;
+   color: black;
+   /* Numbers will be black */
+   font-weight: bold;
+   line-height: 1.5;
+   /* Adjust line height to center the number vertically */
+}
+
+
+/* Highlight bars that are being swapped */
+.highlight {
+   background-color: blue;
+}
+
+
+/* Completed bars will turn green */
+.completed {
+   background-color: green;
+}
+
+
+/* Styling for buttons */
+#generateButton {
+   justify-content: center;
+   margin-top: 20px;
+   padding: 10px 20px;
+   background-color: #3498db;
+   color: white;
+   border: none;
+   font-size: 16px;
+   cursor: pointer;
+}
+
+
+/* Styling for step buttons (next, prev) */
+#prev,
+#next {
+   font-size: 24px;
+   background-color: #3498db;
+   color: white; 
+   border: none;
+   padding: 10px 20px;
+   cursor: pointer;
+   position: absolute;
+   top: 50%;
+   transform: translateY(-50%);
+}
+
+
+#prev {
+   left: 10px;
+}
+
+
+#next {
+   right: 10px;
+}
+
+
+/* Styling for displaying the current step */
+#stepNumber {
+   font-size: 20px;
+   margin-top: 10px;
+}
+
+#fullBody {
+   background-color: grey;
+}
+
+
+/* Syntax highlighting */
+.comment {
+   color: #6a9955;
+   font-style: italic;
+}
+
+.keyword {
+   color: #569cd6;
+   font-weight: bold;
+}
+
+.keyword-void {
+   color: #4ec9b0;
+   font-weight: bold;
+}
+
+.method-name {
+   color: #dcdcaa;
+}
+
+.class-name {
+   color: #4ec9b0;
+}
+
+.variable {
+   color: white;
+}
+
+.parentheses {
+   color: #ff69b4;
+}
+
+.braces {
+   color: #ff69b4;
+}
+
+.methodParentheses {
+   color: #ebc00a;
+}
+
+.methodBraces {
+   color: #ebc00a;
+}
+
+.semicolon {
+   color: #d4d4d4;
+}
+
+
+/* Styling for explanation box */
+#aiOutput {
+   display: flex;
+   flex-direction: column;
+   justify-content: flex-start;
+   align-items: flex-start;
+   font-size: 18px;
+   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+   color: white; /* Default terminal text color */ 
+
+   width: 100%;
+}
+
+/* Styling for "Boilerplate" terminal text */
+#stylingHeader {
+   white-space: pre-wrap;
+   margin: 0px;
+}
+
+/*Styling and typing animation for stage header */
+.stageHeader {
+   white-space: nowrap;
+   /* background-color: green; */
+   display: inline-block;
+   border-right: .5em solid white;
+   margin: 0px;
+   letter-spacing: .05em;
+   animation:
+      typing 1.0s steps(15, end) forwards,
+      blink-caret .75s step-end infinite,
+      hide-caret 0s 5s forwards;
+   overflow: hidden;
+   max-width: 0;
+   width: auto;
+   vertical-align: top;
+}
+
+
+@keyframes typing {
+   from {
+      max-width: 0
+   }
+
+   to {
+      max-width: 100%;
+   }
+}
+
+@keyframes blink-caret {
+
+   from,
+   to {
+      border-color: transparent
+   }
+
+   50% {
+      border-color: white;
+   }
+}
+
+@keyframes hide-caret {
+   to {
+      border-color: transparent;
+   }
+}
+
+
+/*Animation for explanation box header and description */
+.stylingDescript {
+   visibility: hidden;
+   animation: appear 0s 0.9s forwards;
+}
+
+@keyframes appear {
+   to {
+      visibility: visible;
+      /* Make the text visible */
+   }
+}
+
+/*Default styling for stage header & description*/
+#explanationHeader,
+#explanationDescript {
+   margin: 0px;
+}
+
+/*Formatting for stage headers that overrides default when goButton pressed*/
+.header-override {
+   font-weight: bold;
+   font-size: 46px !important;
+   animation: pulse 2.0s ease-in-out infinite !important;
+}
+
+/*Animate the stage header color during editing*/
+@keyframes pulse {
+   0% {
+      color: #90c0e0;
+   }
+
+   50% {
+      color: #007acc;
+   }
+
+   100% {
+      color: #90c0e0;
+   }
+}
+
+/*Formatting for stage descriptions that overrides default when goButton pressed*/
+.descript-override {
+   color: #6a9955;
+   font-style: italic;
+   margin-right: 20px;
+}
+
+/* Formatting for descriptions that overrides when AI gives response*/
+.ai-text {
+   color: white;
+   font-style: normal;
+   /* white-space: pre-wrap; */
+}
+
+/* Formatting for AI text */
+.ai-text h1 {
+   color: #007acc;
+   margin-bottom: 0px;
+}
+.ai-text h2,
+.ai-text h3,
+.ai-text h3 {
+   color: #90c0e0;
+   margin-bottom: 0px;
+}
+
+.ai-text ul li::marker {
+   color: #90c0e0; /* Change bullet color */
+}
+
+/* Formatting for AI text code */
+.ai-text pre {
+    background-color: #1f1f1f;  /* Dark background for code block */
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;  /* Allow horizontal scrolling for long lines */
+}
