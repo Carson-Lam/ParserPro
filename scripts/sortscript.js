@@ -1,326 +1,382 @@
+// =========================== GLOBAL STATE ===================================
 window.onload = function() {
     window.currentPage = 2;
-    console.log("Current Page:", window.currentPage); // For debugging purposes
+    console.log("Sort page loaded");
+    window.parent.postMessage({ pageNumber: 2 }, '*');
 };
 
-let array = [];
-let steps = [];
-let currentStep = 0;
-const maxHeight = 200; // Max height for bars
-const barWidth = 30;   // Fixed width for bars
+let sortSteps = [];
+let currentStepIndex = 0;
+let algorithmName = 'Unknown Algorithm';
 
-// Function to trigger sorting algorithm and visualization
-function generateAndSort() { 
-    globalArray = JSON.parse(localStorage.getItem("globalArray") || "[0]");
-    console.log("Retrieved in sortscript.js:", globalArray);
-    inputArray = globalArray.split(",");
-
-    sortMethod = localStorage.getItem("sortingAlgorithm") || "test";
-    console.log("Retrieved Sorting Algorithm:", sortMethod);
-    // Now that this function is only called after window.codeArray is set,
-    // we safely extract its value.
-    // const inputString = window.codeArray;
-    // if (!inputString) {
-    //     console.error("window.codeArray is not set yet.");
-    //     return;
-    // }
-    // Assuming window.codeArray is a string representing the array,
-    // you may need to convert it to an array, e.g., via split() or JSON.parse().
-    // For now, we simply use slice() as in your original code.
-    // const inputArray = inputString.slice();
-    // const sortMethod = window.codeAlgorithm;
-    sortArrayWithFunction(sortMethod, inputArray); 
-}
-
-// Function to execute the chosen sorting algorithm
-function sortArrayWithFunction(sortMethod, arr) {
-    // array = arr.slice();  // Copy the array
-    steps = [];           // Clear any previous steps
-    currentStep = 0;
-
-    // Call the respective sorting function based on sortMethod
-    switch (sortMethod) {
-        case 'bubble':
-            bubbleSort(arr);
-            break;
-        case 'insertion':
-            insertionSort(arr);
-            break;
-        case 'selection':
-            selectionSort(arr);
-            break;
-        case 'quick':
-            quickSort(arr, 0, arr.length - 1);
-            break;
-        case 'merge':
-            mergeSort(arr);
-            break;
-        case 'counting':
-            countingSort(arr);
-            break;
-        case 'radix':
-            radixSort(arr);
-            break;
-        case 'heap':
-            heapSort(arr);
-            break;
-        case 'bucket':
-            bucketSort(arr);
-            break;
-        default:
-            console.error('Invalid sorting method');
-            return;
+// =========================== LISTEN FOR PARENT MESSAGES ===================================
+window.addEventListener('message', function(event) {
+    if (event.data?.action === 'generateVisualization') {
+        console.log('Received visualization request:', event.data);
+        generateAndSort(event.data.algorithm, event.data.arrayData);
     }
 
-    renderArray(); // Render the array after sorting
-}
-
-// Sorting Algorithms
-
-// Selection Sort
-function selectionSort(arr) {
-    let tempArr = arr.slice();
-    let stepsTemp = [];
-    for (let i = 0; i < tempArr.length - 1; i++) {
-        let minIndex = i;
-        for (let j = i + 1; j < tempArr.length; j++) {
-            if (tempArr[j] < tempArr[minIndex]) {
-                minIndex = j;
-            }
-        }
-        if (minIndex !== i) {
-            [tempArr[i], tempArr[minIndex]] = [tempArr[minIndex], tempArr[i]]; // Swap
-            stepsTemp.push(tempArr.slice()); // Capture the state after each swap
-        }
+    if (event.data?.vizError) {
+        document.getElementById('statusMessage').textContent = event.data.vizError;
+        document.getElementById('statusMessage').style.color = '#ff6b6b';
     }
-    steps = stepsTemp;
-}
-
-// Bubble Sort
-function bubbleSort(arr) {
-    let tempArr = arr.slice();
-    let stepsTemp = [];
-    for (let i = 0; i < tempArr.length; i++) {
-        for (let j = 0; j < tempArr.length - 1 - i; j++) {
-            if (tempArr[j] > tempArr[j + 1]) {
-                [tempArr[j], tempArr[j + 1]] = [tempArr[j + 1], tempArr[j]]; // Swap
-                stepsTemp.push(tempArr.slice()); // Capture the state after each swap
-            }
-        }
-    }
-    steps = stepsTemp;
-}
-
-// Insertion Sort
-function insertionSort(arr) {
-    let tempArr = arr.slice();
-    let stepsTemp = [];
-    for (let i = 1; i < tempArr.length; i++) {
-        let key = tempArr[i];
-        let j = i - 1;
-        while (j >= 0 && tempArr[j] > key) {
-            tempArr[j + 1] = tempArr[j];
-            j--;
-        }
-        tempArr[j + 1] = key;
-        stepsTemp.push(tempArr.slice());
-    }
-    steps = stepsTemp;
-}
-
-// Merge Sort
-function mergeSort(arr) {
-    if (arr.length <= 1) return arr;
-    const mid = Math.floor(arr.length / 2);
-    const left = mergeSort(arr.slice(0, mid));
-    const right = mergeSort(arr.slice(mid));
-    return merge(left, right, arr);
-}
-
-function merge(left, right, arr) {
-    const result = [];
-    let i = 0, j = 0;
-    while (i < left.length && j < right.length) {
-        if (left[i] < right[j]) result.push(left[i++]);
-        else result.push(right[j++]);
-    }
-    result.push(...left.slice(i));
-    result.push(...right.slice(j));
-    for (let k = 0; k < result.length; k++) {
-        arr[k] = result[k];
-    }
-    steps.push(arr.slice()); // Capture the state of the array after each merge
-}
-
-// Quick Sort
-function quickSort(arr, low, high) {
-    if (low < high) {
-        let pi = partition(arr, low, high);
-        quickSort(arr, low, pi - 1);
-        quickSort(arr, pi + 1, high);
-    }
-}
-
-function partition(arr, low, high) {
-    let pivot = arr[high];
-    let i = low - 1;
-    for (let j = low; j <= high - 1; j++) {
-        if (arr[j] < pivot) {
-            i++;
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-    }
-    [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
-    return i + 1;
-}
-
-// Counting Sort
-function countingSort(arr) {
-    let tempArr = arr.slice();
-    let max = Math.max(...tempArr);
-    let min = Math.min(...tempArr);
-    let count = Array(max - min + 1).fill(0);
-    let stepsTemp = [];
-    tempArr.forEach(num => count[num - min]++);
-    let index = 0;
-    for (let i = 0; i <= max - min; i++) {
-        while (count[i] > 0) {
-            tempArr[index++] = i + min;
-            count[i]--;
-        }
-    }
-    stepsTemp.push(tempArr);
-    steps = stepsTemp;
-}
-
-// Radix Sort
-function radixSort(arr) {
-    let tempArr = arr.slice();
-    let max = Math.max(...tempArr);
-    let exp = 1;
-    let stepsTemp = [];
-    while (max / exp > 1) {
-        tempArr = countingSortRadix(tempArr, exp);
-        stepsTemp.push(tempArr);
-        exp *= 10;
-    }
-    steps = stepsTemp;
-}
-
-function countingSortRadix(arr, exp) {
-    let output = Array(arr.length).fill(0);
-    let count = Array(10).fill(0);
-    for (let i = 0; i < arr.length; i++) {
-        let index = Math.floor(arr[i] / exp) % 10;
-        count[index]++;
-    }
-    for (let i = 1; i < 10; i++) {
-        count[i] += count[i - 1];
-    }
-    for (let i = arr.length - 1; i >= 0; i--) {
-        let index = Math.floor(arr[i] / exp) % 10;
-        output[count[index] - 1] = arr[i];
-        count[index]--;
-    }
-    return output;
-}
-
-// Heap Sort
-function heapSort(arr) {
-    let tempArr = arr.slice();
-    let stepsTemp = [];
-    let n = tempArr.length;
-    for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-        heapify(tempArr, n, i);
-    }
-    for (let i = n - 1; i > 0; i--) {
-        [tempArr[0], tempArr[i]] = [tempArr[i], tempArr[0]];
-        heapify(tempArr, i, 0);
-        stepsTemp.push(tempArr.slice());
-    }
-    steps = stepsTemp;
-}
-
-function heapify(arr, n, i) {
-    let largest = i;
-    let left = 2 * i + 1;
-    let right = 2 * i + 2;
-    if (left < n && arr[left] > arr[largest]) largest = left;
-    if (right < n && arr[right] > arr[largest]) largest = right;
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, n, largest);
-    }
-}
-
-// Bucket Sort
-function bucketSort(arr) {
-    let tempArr = arr.slice();
-    let stepsTemp = [];
-    let buckets = Array.from({ length: 10 }, () => []); // Create 10 empty buckets
-    let max = Math.max(...tempArr);
-    let min = Math.min(...tempArr);
-    tempArr.forEach(num => {
-        let index = Math.floor(((num - min) / (max - min)) * (buckets.length - 1));
-        buckets[index].push(num);
-    });
-    stepsTemp.push(buckets.map(bucket => [...bucket]));  // Capture after distributing
-    buckets.forEach(bucket => bucket.sort((a, b) => a - b)); // Sort each bucket
-    stepsTemp.push(buckets.map(bucket => [...bucket]));  // Capture after sorting buckets
-    tempArr = [].concat(...buckets);  // Merge all the sorted buckets
-    stepsTemp.push(tempArr);  // Capture the final sorted array
-    steps = stepsTemp;
-}
-
-// Render array with bars for visualization
-function renderArray() {
-    const container = document.getElementById('arrayContainer');
-    container.innerHTML = ''; // Clear previous array
-
-    // Render each bar with corresponding value
-    for (let i = 0; i < array.length; i++) {
-        const bar = document.createElement('div');
-        bar.classList.add('bar');
-
-        // Adjust the height of the bars relative to the max value
-        const height = (array[i] / Math.max(...array)) * maxHeight;
-        bar.style.height = `${height}px`;
-        bar.style.width = `${barWidth}px`;
-
-        // Display value inside the bar
-        const barText = document.createElement('span');
-        barText.classList.add('bar-value');
-        barText.innerText = array[i];
-        bar.appendChild(barText);
-
-        bar.style.backgroundColor = 'red';  // Initially all bars are red
-        container.appendChild(bar);
-    }
-
-    // Update the step number on the page
-    document.getElementById('stepNumber').innerText = currentStep + 1;
-}
-
-// **Next Step**: Move to the next step of the sorting process
-function nextStep() {
-    if (currentStep < steps.length - 1) {
-        currentStep++;
-        array = steps[currentStep].slice(); // Get the next step's state
-        renderArray();  // Re-render the array for this step
-    }
-}
-
-// **Previous Step**: Move to the previous step of the sorting process
-function prevStep() {
-    if (currentStep > 0) {
-        currentStep--;
-        array = steps[currentStep].slice(); // Get the previous step's state
-        renderArray();  // Re-render the array for this step
-    }
-}
-
-// Listen for the custom event that signals window.codeArray is ready
-window.addEventListener('codeArrayReady', function() {
-    console.log("Received 'codeArrayReady' event.");
-    generateAndSort();
 });
+
+// =========================== SORTING ALGORITHMS ===================================
+function bubbleSort(arr) {
+    const steps = [];
+    const temp = [...arr];
+    
+    for (let i = 0; i < temp.length; i++) {
+        for (let j = 0; j < temp.length - i - 1; j++) {
+            steps.push({
+                array: [...temp],
+                comparing: [j, j + 1],
+                sorted: []
+            });
+            
+            if (temp[j] > temp[j + 1]) {
+                [temp[j], temp[j + 1]] = [temp[j + 1], temp[j]];
+                steps.push({
+                    array: [...temp],
+                    swapping: [j, j + 1],
+                    sorted: []
+                });
+            }
+        }
+    }
+    
+    steps.push({
+        array: [...temp],
+        comparing: [],
+        sorted: Array.from({length: temp.length}, (_, i) => i)
+    });
+    
+    return steps;
+}
+
+function insertionSort(arr) {
+    const steps = [];
+    const temp = [...arr];
+    
+    for (let i = 1; i < temp.length; i++) {
+        let key = temp[i];
+        let j = i - 1;
+        
+        steps.push({
+            array: [...temp],
+            comparing: [i, j],
+            sorted: []
+        });
+        
+        while (j >= 0 && temp[j] > key) {
+            temp[j + 1] = temp[j];
+            j--;
+            steps.push({
+                array: [...temp],
+                swapping: [j + 1, j + 2],
+                sorted: []
+            });
+        }
+        temp[j + 1] = key;
+    }
+    
+    steps.push({
+        array: [...temp],
+        comparing: [],
+        sorted: Array.from({length: temp.length}, (_, i) => i)
+    });
+    
+    return steps;
+}
+
+function selectionSort(arr) {
+    const steps = [];
+    const temp = [...arr];
+    
+    for (let i = 0; i < temp.length - 1; i++) {
+        let minIdx = i;
+        
+        for (let j = i + 1; j < temp.length; j++) {
+            steps.push({
+                array: [...temp],
+                comparing: [minIdx, j],
+                sorted: []
+            });
+            
+            if (temp[j] < temp[minIdx]) {
+                minIdx = j;
+            }
+        }
+        
+        if (minIdx !== i) {
+            [temp[i], temp[minIdx]] = [temp[minIdx], temp[i]];
+            steps.push({
+                array: [...temp],
+                swapping: [i, minIdx],
+                sorted: []
+            });
+        }
+    }
+    
+    steps.push({
+        array: [...temp],
+        comparing: [],
+        sorted: Array.from({length: temp.length}, (_, i) => i)
+    });
+    
+    return steps;
+}
+
+function quickSort(arr) {
+    const steps = [];
+    const temp = [...arr];
+    
+    function partition(low, high) {
+        const pivot = temp[high];
+        let i = low - 1;
+        
+        for (let j = low; j < high; j++) {
+            steps.push({
+                array: [...temp],
+                comparing: [j, high],
+                sorted: []
+            });
+            
+            if (temp[j] < pivot) {
+                i++;
+                [temp[i], temp[j]] = [temp[j], temp[i]];
+                steps.push({
+                    array: [...temp],
+                    swapping: [i, j],
+                    sorted: []
+                });
+            }
+        }
+        
+        [temp[i + 1], temp[high]] = [temp[high], temp[i + 1]];
+        steps.push({
+            array: [...temp],
+            swapping: [i + 1, high],
+            sorted: []
+        });
+        
+        return i + 1;
+    }
+    
+    function quickSortHelper(low, high) {
+        if (low < high) {
+            const pi = partition(low, high);
+            quickSortHelper(low, pi - 1);
+            quickSortHelper(pi + 1, high);
+        }
+    }
+    
+    quickSortHelper(0, temp.length - 1);
+    
+    steps.push({
+        array: [...temp],
+        comparing: [],
+        sorted: Array.from({length: temp.length}, (_, i) => i)
+    });
+    
+    return steps;
+}
+
+function mergeSort(arr) {
+    const steps = [];
+    const temp = [...arr];
+    
+    function merge(left, mid, right) {
+        const leftArr = temp.slice(left, mid + 1);
+        const rightArr = temp.slice(mid + 1, right + 1);
+        
+        let i = 0, j = 0, k = left;
+        
+        while (i < leftArr.length && j < rightArr.length) {
+            steps.push({
+                array: [...temp],
+                comparing: [left + i, mid + 1 + j],
+                sorted: []
+            });
+            
+            if (leftArr[i] <= rightArr[j]) {
+                temp[k] = leftArr[i];
+                i++;
+            } else {
+                temp[k] = rightArr[j];
+                j++;
+            }
+            k++;
+        }
+        
+        while (i < leftArr.length) {
+            temp[k] = leftArr[i];
+            i++;
+            k++;
+        }
+        
+        while (j < rightArr.length) {
+            temp[k] = rightArr[j];
+            j++;
+            k++;
+        }
+        
+        steps.push({
+            array: [...temp],
+            comparing: [],
+            sorted: []
+        });
+    }
+    
+    function mergeSortHelper(left, right) {
+        if (left < right) {
+            const mid = Math.floor((left + right) / 2);
+            mergeSortHelper(left, mid);
+            mergeSortHelper(mid + 1, right);
+            merge(left, mid, right);
+        }
+    }
+    
+    mergeSortHelper(0, temp.length - 1);
+    
+    steps.push({
+        array: [...temp],
+        comparing: [],
+        sorted: Array.from({length: temp.length}, (_, i) => i)
+    });
+    
+    return steps;
+}
+
+// For now, use selection sort as fallback
+function heapSort(arr) {
+    return selectionSort(arr);
+}
+
+function countingSort(arr) {
+    return selectionSort(arr);
+}
+
+function radixSort(arr) {
+    return selectionSort(arr);
+}
+
+function bucketSort(arr) {
+    return selectionSort(arr);
+}
+
+// =========================== ALGORITHM ROUTER ===================================
+function getSortingSteps(algorithm, array) {
+    const algoMap = {
+        'bubble': { fn: bubbleSort, name: 'Bubble Sort' },
+        'insertion': { fn: insertionSort, name: 'Insertion Sort' },
+        'selection': { fn: selectionSort, name: 'Selection Sort' },
+        'quick': { fn: quickSort, name: 'Quick Sort' },
+        'merge': { fn: mergeSort, name: 'Merge Sort' },
+        'heap': { fn: heapSort, name: 'Heap Sort' },
+        'counting': { fn: countingSort, name: 'Counting Sort' },
+        'radix': { fn: radixSort, name: 'Radix Sort' },
+        'bucket': { fn: bucketSort, name: 'Bucket Sort' },
+        'default': { fn: bubbleSort, name: 'Bubble Sort (Default)' }
+    };
+    
+    const selected = algoMap[algorithm] || algoMap['default'];
+    algorithmName = selected.name;
+    
+    return selected.fn(array);
+}
+
+// =========================== VISUALIZATION ===================================
+
+function renderStep(step) {
+    const container = document.getElementById('arrayContainer');
+    if (!container) return;
+    
+    const { array, comparing = [], swapping = [], sorted = [] } = step;
+    const maxVal = Math.max(...array);
+    
+    container.innerHTML = '';
+    
+    array.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        
+        const height = (value / maxVal) * 320; 
+        bar.style.height = `${height}px`;
+        
+        // Apply state-based colors
+        if (sorted.includes(index)) {
+            bar.classList.add('sorted');
+        } else if (swapping.includes(index)) {
+            bar.classList.add('swapping');
+        } else if (comparing.includes(index)) {
+            bar.classList.add('comparing');
+        }
+        
+        const valueLabel = document.createElement('span');
+        valueLabel.className = 'bar-value';
+        valueLabel.textContent = value;
+        bar.appendChild(valueLabel);
+        
+        container.appendChild(bar);
+    });
+}
+
+function updateUI() {
+    document.getElementById('stepNumber').textContent = currentStepIndex + 1;
+    document.getElementById('totalSteps').textContent = sortSteps.length;
+    document.getElementById('algorithmName').textContent = algorithmName;
+    
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    
+    prevBtn.disabled = currentStepIndex === 0;
+    nextBtn.disabled = currentStepIndex >= sortSteps.length - 1;
+    
+    if (sortSteps.length > 0) {
+        renderStep(sortSteps[currentStepIndex]);
+    }
+}
+
+// =========================== CONTROL FUNCTIONS ===================================
+
+function generateAndSort(algorithm, arrayDataStr) {
+    console.log('Generating visualization for:', algorithm, arrayDataStr);
+    
+    // Parse the array data
+    const array = arrayDataStr
+        .split(',')
+        .map(s => parseInt(s.trim()))
+        .filter(n => !isNaN(n));
+    
+    if (array.length === 0) {
+        console.error('No valid array data');
+        document.getElementById('statusMessage').textContent = 'Error: No valid array data found';
+        return;
+    }
+    
+    // Generate sorting steps
+    sortSteps = getSortingSteps(algorithm, array);
+    currentStepIndex = 0;
+    
+    console.log(`Generated ${sortSteps.length} steps for ${algorithmName}`);
+    
+    updateUI();
+    
+    document.getElementById('statusMessage').textContent = `Ready: ${sortSteps.length} steps`;
+}
+
+function nextStep() {
+    if (currentStepIndex < sortSteps.length - 1) {
+        currentStepIndex++;
+        updateUI();
+    }
+}
+
+function prevStep() {
+    if (currentStepIndex > 0) {
+        currentStepIndex--;
+        updateUI();
+    }
+}

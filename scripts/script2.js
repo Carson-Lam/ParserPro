@@ -8,6 +8,10 @@ let parsing = false;
 let currentPage = 1;
 window.currentPage = currentPage;
 
+// Visualization state
+let detectedAlgorithm = null;
+let extractedArray = null;
+
 // DOM element references
 const infoButton = document.getElementById("infoButton");
 const infoPopup = document.getElementById("infoPopup");
@@ -15,7 +19,7 @@ const textarea = document.getElementById("codeInput");
 const grabBar = document.getElementById("grabBar");
 const iframe = document.getElementById('frameExplanation');
 const goButton = document.getElementById('goButton');
-const MAX_FILE_SIZE = 500; // ~ 125 tokens
+const MAX_FILE_SIZE = 1000; // ~ 125 tokens
 let isDragging = false;
 
 // AI Conversation history array init
@@ -23,6 +27,16 @@ let conversationHistory = [{
     role: 'system',
     content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
 }];
+
+
+// =========================== PAGE DETECTION  ===================================
+// Listen for page changes from iframes
+window.addEventListener('message', function(event) {
+    if (event.data?.pageNumber !== undefined) {
+        window.currentPage = event.data.pageNumber;
+        console.log('Page changed to:', window.currentPage);
+    }
+});
 
 // =========================== INFO POPUP ===================================
 if (infoButton && infoPopup) {
@@ -72,12 +86,17 @@ if (goButton && textarea) {
                 iframe.contentWindow.postMessage({ action: 'backButtonClicked' }, '*');
             } 
 
-            // Reset conversation history
+            // Reset all states
             conversationHistory = [{
                 role: 'system',
                 content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
             }];
-            console.log("convo cleared!");
+
+            detectedAlgorithm = null;
+            extractedArray = null;
+
+            console.log("all states cleared!");
+
         });
 
         // Add code context to conversation, but trim files that are too large (save tokens!!)
@@ -88,11 +107,13 @@ if (goButton && textarea) {
                 + '\n\n... [middle section truncated] ...\n\n' // Take first few and last few chars to preserve structure
                 + inputText.substring(inputText.length - halfSize);
             console.log(`Large file trimmed: ${inputText.length} → ${fileContext.length} chars`);
+        } else {
+            fileContext = inputText;
         }
 
         conversationHistory.push({
             role: 'system',
-            content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${inputText}`
+            content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
         });
     });
 }
@@ -110,7 +131,6 @@ function checkHighlightedText() {
 }
 
 // ======================== CALLING AI FUNCTIONS =================================
-
 // Trim conversation history w sliding window to Keep  history manageable
 function trimConversationHistory() {
     const MAX_HISTORY_ITEMS = 10; // Keep last 10 messages (5 exchanges)
@@ -121,7 +141,7 @@ function trimConversationHistory() {
         conversationHistory = [...systemMessages, ...recentMessages];
         
         console.log("Trimmed conversation history to", conversationHistory.length, "messages");
-    }
+    } 
 }
 
 async function callAI(systemPrompt) {
@@ -198,15 +218,21 @@ async function handleVisualizationPage() {
     If no sorting algorithm is found, respond with: default`;
 
     let algorithm = await callAI(algorithmPrompt);
-    algorithm = algorithm?.toLowerCase() || 'default'; //In case AI gives inconsistent case
+    algorithm = algorithm?.toLowerCase().trim()  || 'default'; //In case AI gives inconsistent case
+    console.log(algorithm);
 
     if (!algorithm || algorithm === 'default') {
         console.log(" No sorting algorithm detected! ");
+        
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({ 
+                vizError: 'No sorting algorithm detected in the highlighted code.' 
+            }, '*');
+        }
         return;
     }
 
     console.log("Detected algorithm: ", algorithm)
-    localStorage.setItem('algorithm', algorithm); // Store algorithm locally
 
     // Extract array from code, return [array as list]
     const arrayPrompt = `Analyze the code and identify if it contains an array
@@ -216,10 +242,22 @@ async function handleVisualizationPage() {
     Respond with ONLY the array values, comma seperated, no brackets or extra text.`;
 
     const arrayData = await callAI(arrayPrompt);
+    console.log(arrayData);
 
     if (arrayData) {
-        localStorage.setItem('arrayData', arrayData)
-        console.log('Extracted array: ', arrayData);
+        
+        detectedAlgorithm = algorithm;
+        extractedArray = arrayData;
+        
+        // Send action to iframe
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({ 
+                action: 'generateVisualization',
+                algorithm: algorithm,
+                arrayData: arrayData
+            }, '*');
+
+        }
     }
 }
 

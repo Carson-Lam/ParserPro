@@ -23,25 +23,24 @@
         </header>
 
         <div class="visualization-wrapper">
+            <button class="btn btn-secondary" id="prev" onclick="prevStep()" disabled>
+                ← Prev
+            </button>
             <div id="arrayContainer">
                 <div class="empty-state">
                     <div class="empty-state-icon"></div>
                     <div class="empty-state-text">Parse code and highlight a sorting algorithm to begin</div>
                 </div>
             </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn btn-secondary" id="prev" onclick="prevStep()" disabled>
-                ← Previous
-            </button>
-            <button class="btn btn-primary" id="generateButton" onclick="generateAndSort()">
-                Generate Visualization
-            </button>
             <button class="btn btn-secondary" id="next" onclick="nextStep()" disabled>
                 Next →
             </button>
         </div>
+
+        <!-- <div class="controls">
+
+
+        </div> -->
 
         <div class="step-info">
             <div class="label">Current Step</div>
