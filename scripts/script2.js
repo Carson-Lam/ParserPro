@@ -158,6 +158,7 @@ async function callAI(systemPrompt) {
         });
 
         const completion = await response.json();
+        console.log('Full API response:', completion);
         const airesponse = completion.choices[0].message.content.trim();
         
         conversationHistory.push({
