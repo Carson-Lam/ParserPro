@@ -166,6 +166,7 @@ async function handleExplanationPage() {
         # Title
         ## **Code Summary** 
         - Explain the broader role of the highlighted code within the entire code (3-4 sentences)
+        - Explain the role of the entire code (that includes the highlighted)
         ## **Key Concepts** 
         - Main programming concepts used
         ## **Line-By-Line** 
