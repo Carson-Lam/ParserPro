@@ -16,36 +16,41 @@
         <a href="complexity.html">Time Complexity</a>
     </div>
 
-    <h1>Sorting Algorithms Visualization</h1>
+    <div class="container">
+        <header class="header">
+            <h1>Sorting Algorithm Visualization</h1>
+            <div class="algorithm-name" id="algorithmName">No algorithm detected</div>
+        </header>
 
-    <!-- DEBUG -->
-     
-    <!-- Dropdown for sorting method -->
-    <!-- <select id="sortMethod">
-        <option value="bubble">Bubble Sort</option>
-        <option value="insertion">Insertion Sort</option>
-        <option value="selection">Selection Sort</option>
-        <option value="quick">Quick Sort</option>
-        <option value="merge">Merge Sort</option>
-        <option value="counting">Counting Sort</option>
-        <option value="radix">Radix Sort</option>
-        <option value="heap">Heap Sort</option>
-        <option value="bucket">Bucket Sort</option>
-    </select> -->
+        <div class="visualization-wrapper">
+            <div id="arrayContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon"></div>
+                    <div class="empty-state-text">Parse code and highlight a sorting algorithm to begin</div>
+                </div>
+            </div>
+        </div>
 
-    <!-- <input type="text" id="arrayInput" placeholder="Enter array (e.g. 5, 3, 8, 1, 2)" /> -->
+        <div class="controls">
+            <button class="btn btn-secondary" id="prev" onclick="prevStep()" disabled>
+                ← Previous
+            </button>
+            <button class="btn btn-primary" id="generateButton" onclick="generateAndSort()">
+                Generate Visualization
+            </button>
+            <button class="btn btn-secondary" id="next" onclick="nextStep()" disabled>
+                Next →
+            </button>
+        </div>
 
-    <!-- Button to trigger sorting -->
-    <button id="generateButton" onclick="generateAndSort()">Generate and Sort Array</button>
+        <div class="step-info">
+            <div class="label">Current Step</div>
+            <div class="value">
+                <span id="stepNumber">0</span> / <span id="totalSteps">0</span>
+            </div>
+        </div>
 
-    <div id="arrayContainer"></div>
-
-    <!-- Previous and Next Step Buttons -->
-    <button id="prev" onclick="prevStep()">Prev</button>
-    <button id="next" onclick="nextStep()">Next</button>
-
-    <div>
-        <p>Step: <span id="stepNumber">0</span></p>
+        <div class="status-message" id="statusMessage"></div>
     </div>
 
     <script src="../scripts/script2.js"></script>
@@ -53,3 +58,21 @@
 </body>
 
 </html>
+
+
+<!-- DEBUG -->
+    
+<!-- Dropdown for sorting method -->
+<!-- <select id="sortMethod">
+    <option value="bubble">Bubble Sort</option>
+    <option value="insertion">Insertion Sort</option>
+    <option value="selection">Selection Sort</option>
+    <option value="quick">Quick Sort</option>
+    <option value="merge">Merge Sort</option>
+    <option value="counting">Counting Sort</option>
+    <option value="radix">Radix Sort</option>
+    <option value="heap">Heap Sort</option>
+    <option value="bucket">Bucket Sort</option>
+</select> -->
+
+<!-- <input type="text" id="arrayInput" placeholder="Enter array (e.g. 5, 3, 8, 1, 2)" /> -->

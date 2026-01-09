@@ -7,15 +7,30 @@
     <link rel="stylesheet" href="../styles/complexity.css">
 </head>
 <body>
-    <!-- Navbar -->
-    <div class="navbar">
-        <a href="explanation.html" >Explanation</a>
+    <nav class="navbar">
+        <a href="explanation.html">Explanation</a>
         <a href="sort.html">Visualization</a>
         <a href="complexity.html" class="current">Time Complexity</a>
-    </div>
+    </nav>
+
     <div class="container">
-        <h1>Binary Tree Visualizer</h1>
-        <div id="treeContainer"></div>
+        <header class="header">
+            <h1>Time & Space Complexity Analysis</h1>
+            <div class="subtitle">Algorithm performance analysis powered by AI</div>
+        </header>
+
+        <div class="analysis-wrapper">
+            <div id="analysisContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏱</div>
+                    <div class="empty-state-text">
+                        Parse code and highlight an algorithm to analyze its complexity
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
     </div>
     <script src="../scripts/script2.js"></script>
     <!-- <script src="../scripts/treeshow.js"></script> -->
