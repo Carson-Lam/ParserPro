@@ -35,7 +35,7 @@ window.addEventListener("message", function (event) {
         // Set text content to parsing stage
         stageHeader.textContent = "Execute AI analysis";
         header.textContent = "";
-        description.innerHTML = marked.parse(event.data.explanation); // Use markdown parser for HTML AI Output
+        description.innerHTML = marked.parse(event.data.explanation); // Use markdown parser for AI Output
 
         restartAnimations();
         console.log("AI Explanation generated!");
@@ -68,7 +68,7 @@ header.textContent = ` ____   _    ____  ____ ___ _   _  ____   ____ _____  _   
         //Add editing stage styling
         description.classList.remove('ai-text');
         header.classList.add('header-override');
-        description.classList.add('descript-oveerride');
+        description.classList.add('descript-override');
 
         //Set text content to editing stage
         stageHeader.textContent = "Start Editing";

@@ -1,10 +1,9 @@
 // =========================== GLOBAL STATE ===================================
 
-const { text } = require("express");
-
 // Manipulable variables
 let selectedText = "";
 let inputText = "";
+let fileContext = inputText; // For trimming
 let parsing = false;
 let currentPage = 1;
 window.currentPage = currentPage;
@@ -16,6 +15,7 @@ const textarea = document.getElementById("codeInput");
 const grabBar = document.getElementById("grabBar");
 const iframe = document.getElementById('frameExplanation');
 const goButton = document.getElementById('goButton');
+const MAX_FILE_SIZE = 500; // ~ 125 tokens
 let isDragging = false;
 
 // AI Conversation history array init
@@ -60,13 +60,13 @@ if (goButton && textarea) {
         const backButton = document.createElement('button');
         backButton.id = 'backButton'
         backButton.textContent = "⮜ (Back!)";
-        goButton.parentNode.replaceChild(backButton, submitButton); 
+        goButton.parentNode.replaceChild(backButton, goButton); 
 
         // Handle back button click
         backButton.addEventListener('click', function () {
             parsing = false;
             highlightArea.parentNode.replaceChild(textarea, highlightArea);
-            backButton.parentNode.replaceChild(submitButton, backButton);
+            backButton.parentNode.replaceChild(goButton, backButton);
 
             if (iframe?.contentWindow) {
                 iframe.contentWindow.postMessage({ action: 'backButtonClicked' }, '*');
@@ -80,7 +80,16 @@ if (goButton && textarea) {
             console.log("convo cleared!");
         });
 
-        // Add code context to conversation
+        // Add code context to conversation, but trim files that are too large (save tokens!!)
+        if (inputText.length > MAX_FILE_SIZE) {
+            const halfSize = MAX_FILE_SIZE / 2;
+            fileContext = 
+                inputText.substring(0, halfSize) 
+                + '\n\n... [middle section truncated] ...\n\n' // Take first few and last few chars to preserve structure
+                + inputText.substring(inputText.length - halfSize);
+            console.log(`Large file trimmed: ${inputText.length} → ${fileContext.length} chars`);
+        }
+
         conversationHistory.push({
             role: 'system',
             content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${inputText}`
@@ -100,7 +109,21 @@ function checkHighlightedText() {
     }
 }
 
-// =========================== AI ANALYSIS ====================================
+// ======================== CALLING AI FUNCTIONS =================================
+
+// Trim conversation history w sliding window to Keep  history manageable
+function trimConversationHistory() {
+    const MAX_HISTORY_ITEMS = 10; // Keep last 10 messages (5 exchanges)
+    
+    if (conversationHistory.length > MAX_HISTORY_ITEMS) {
+        const systemMessages = conversationHistory.slice(0, 3); // System + file context
+        const recentMessages = conversationHistory.slice(-MAX_HISTORY_ITEMS + 3);
+        conversationHistory = [...systemMessages, ...recentMessages];
+        
+        console.log("Trimmed conversation history to", conversationHistory.length, "messages");
+    }
+}
+
 async function callAI(systemPrompt) {
     conversationHistory.push({ role: 'system', content: systemPrompt });
     conversationHistory.push({ role: 'user', content: selectedText })
@@ -121,6 +144,8 @@ async function callAI(systemPrompt) {
             role: 'assistant',
             content: airesponse
         });
+        
+        trimConversationHistory(); 
 
         return airesponse;
     } catch (error) {
@@ -130,32 +155,26 @@ async function callAI(systemPrompt) {
 }
 
 // ======================== PAGE SPECIFIC HANDLERS =================================
-// CASE 1: Explanation Page - Generate code expalnation
+// CASE 1: Explanation Page - Generate code explanation
 async function handleExplanationPage() {
     console.log("Generating explanation...");
     const prompt = 
         `Analyze the highlighted code and provide a concise, detailed explanation.
-        You must follow this structure:
-        <h1>AI Code Breakdown</h1>
-        Line separator
-        <h3>Code Summary</h3>
-        Summary of what the code does 
-        Line separator
-        <h3>Key Concepts</h3> 
-        Rundown of key conccepts used, with each key concept in a subheading
-        Line separator
-        <h3>Example Uses</h3>
-        Header: Example use case if applicable
 
-        Format your response in HTML with proper structure. 
-        (h1 for title, h3 for headers, h4 for subheaders, line separators, bullet points for lists)
-        Be direct and analytical without conversational fluff.
+        You MUST follow this response structure:
 
-        Do not:
-        - prompt the user for more information
-        - Make up false information
-        - Analyze any input if it is not code. Instead, only return MISSING CODE as a title.
-        `
+        # Title
+        ## **Code Summary** 
+        - Explain the broader role of the highlighted code within the entire code (3-4 sentences)
+        ## **Key Concepts** 
+        - Main programming concepts used
+        ## **Line-By-Line** 
+        - Line by line breakdown translating what each line does (MUST use code blocks)
+
+        Use markdown formatting. Be direct and technical - no conversational fluff.
+        Add a space between each bullet point (-).
+        Consider the wider code as context which you recieved in a previous chat completion.
+        If input is not code, respond with ONLY "# MISSING CODE".`;
 
     if (iframe?.contentWindow) {
         iframe.contentWindow.postMessage({ explanation: 'Generating response...' }, "*");
@@ -164,7 +183,7 @@ async function handleExplanationPage() {
     const explanation = await callAI(prompt)
 
     if (explanation && iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ explanation: 'Generating response...' }, "*");
+        iframe.contentWindow.postMessage({ explanation: explanation}, "*");
     }
 }
 
@@ -177,8 +196,8 @@ async function handleVisualizationPage() {
     Respond with ONLY one word from this list: bubble, insertion, selection, quick, merge, counting, radix, heap, bucket
     If no sorting algorithm is found, respond with: default`;
 
-    const algorithm = await callAI(algorithmPrompt);
-    algorithm = algorithm.toLowerCase(); //In case AI gives inconsistent case
+    let algorithm = await callAI(algorithmPrompt);
+    algorithm = algorithm?.toLowerCase() || 'default'; //In case AI gives inconsistent case
 
     if (!algorithm || algorithm === 'default') {
         console.log(" No sorting algorithm detected! ");
@@ -191,8 +210,8 @@ async function handleVisualizationPage() {
     // Extract array from code, return [array as list]
     const arrayPrompt = `Analyze the code and identify if it contains an array
     or any kind of list of values, intended to be sorted.  
-    - If so, exctract the array literal from the code.
-    - If not, generate a dummy array with 5-10 random inteegers between 1-50.
+    - If so, extract the array literal from the code.
+    - If not, generate a dummy array with 5-10 random integers between 1-50.
     Respond with ONLY the array values, comma seperated, no brackets or extra text.`;
 
     const arrayData = await callAI(arrayPrompt);
@@ -203,82 +222,88 @@ async function handleVisualizationPage() {
     }
 }
 
-// CASE 3: Performance page - Analyze time, space, and 
+// CASE 3: Performance page - Analyze time, space, and provide improvements
 async function handleComplexityPage() {
     console.log("Analyzing time complexity...");
 
     // Extract algorithm from code, return [one word identifier]
-    const complexityPrompt = `Analyze the highlighted code and provide a detailed complexity analysis.
-    Your response MUST be formatted in HTML with the following structure:
-    <h1>Algorithm Complexity Analysis</h1>
-    Line separator
-    <h3>Time Complexity:</h3>
-    <tr>
-    <td><strong>Best Case:</strong> O(...) - brief explanation</td>
-    <td><strong>Average Case:</strong> O(...) - brief explanation</td>
-    <td><strong>Worst Case:</strong> O(...) - brief explanation</td>
-    </tr>
-    Line separator
-    <h3>Space Complexity:</h3>
-    <tr>
-    <td><strong>Auxiliary Space:</strong> O(...) - what memory is used</td>
-    <td><strong>Total Space:</strong> O(...) - including input</td>
-    </tr>
-    Line separator
-    <h3>Performance Analysis:</h3>
-    <ul>
-    <li>Key operations and their costs</li>
-    <li>Dominant factors affecting performance</li>
-    <li>Trade-offs made in the implementation</li>
-    </ul>
-    Line separator
-    <h3>Optimization Suggestions:</h3>
-    <ul>
-    <li>Specific improvements that could reduce complexity</li>
-    <li>Alternative approaches with better performance</li>
-    `;
+    const complexityPrompt = `Analyze the complexity of the highlighted code.
+
+    You MUST follow this response structure:
+    # Time Complexity:
+    | Case         | Complexity |
+    |--------------|------------|
+    | Best Case    | O(...)     |
+    | Average Case | O(...)     |
+    | Worst Case   | O(...)     |
+    # Space Complexity:
+    | Type       | Complexity |
+    |------------|------------|
+    | Auxiliary  | O(...)     |
+    | Total      | O(...)     |
+    # Performance Factors
+    - Break down parts of the code (USE CODE BLOCKS) that contribute to the complexity
+    # Optimization Ideas 
+    - How to improve it
+
+    Use markdown formatting. Be technical and concise.
+    If input is not code, respond with "MISSING CODE".`;
+    if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ explanation: 'Analyzing complexity...' }, "*");
+    }
 
     const complexity = await callAI(complexityPrompt);
 
-    if (!complexity || algorithm === 'default') {
-        console.log(" No sorting algorithm detected! ");
-        return;
-    }
-
-    console.log("Detected algorithm: ", algorithm)
-    localStorage.setItem('algorithm', algorithm); // Store algorithm locally
-
-    // Extract array from code, return [array as list]
-    const arrayPrompt = `Analyze the code and identify if it contains an array
-    or any kind of list of values, intended to be sorted.  
-    - If so, exctract the array literal from the code.
-    - If not, generate a dummy array with 5-10 random inteegers between 1-50.
-    Respond with ONLY the array values, comma seperated, no brackets or extra text.`;
-
-    const arrayData = await callAI(arrayPrompt);
-
-    if (arrayData) {
-        localStorage.setItem('arrayData', arrayData)
-        console.log('Extracted array: ', arrayData);
+    if (complexity && iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ explanation: complexity }, "*");
     }
 }
 
+// ======================== ENTER KEY HANDLER =================================
+document.addEventListener('keydown', async function (event) {
+    if (event.key !== 'Enter' || !parsing) return;
 
+    console.log("Processing highlighted code...");
+    checkHighlightedText();
 
-// Grab bar
-grabBar.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    document.body.style.cursor = "ns-resize";
+    // Don't call handlers if no text selected
+    if (!selectedText) {
+        console.log("No text selected");
+        return;
+    }
+
+    // Route to appropriate handler based on current page
+    switch (window.currentPage) {
+        case 1:
+            await handleExplanationPage();
+            break;
+        case 2:
+            await handleVisualizationPage();
+            break;
+        case 3:
+            await handleComplexityPage();
+            break;
+        default:
+            console.error("Unknown page:", window.currentPage);
+    }
 });
 
-document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const newHeight = e.clientY - textarea.getBoundingClientRect().top;
-    textarea.style.height = newHeight + "px";
-});
+// =========================== RESIZABLE TEXTAREA =============================
+if (grabBar && textarea) {
+    grabBar.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        document.body.style.cursor = "ns-resize";
+    });
 
-document.addEventListener("mouseup", () => {
-    isDragging = false;
-    document.body.style.cursor = "default";
-});
+    document.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const newHeight = e.clientY - textarea.getBoundingClientRect().top;
+        textarea.style.height = Math.max(100, newHeight) + "px";
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.cursor = "default";
+    });
+}
