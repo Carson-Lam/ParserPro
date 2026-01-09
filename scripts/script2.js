@@ -1,45 +1,35 @@
-//Setup info button
-const infoButton = document.getElementById("infoButton");
-const infoPopup = document.getElementById("infoPopup");
-
-// Setup grab bar
-const textarea = document.getElementById("codeInput");
-const grabBar = document.getElementById("grabBar");
-
-var selectedText = "";
-var parsing = false;
-
+// =========================== GLOBAL STATE ===================================
+// Manipulable variables
+let selectedText = "";
+let inputText = "";
+let parsing = false;
 let currentPage = 1;
 window.currentPage = currentPage;
-let globalArray = [0];
-let globalAlgorithm = "test";
-let iframe = document.getElementById('frameExplanation');
+
+// DOM element references
+const infoButton = document.getElementById("infoButton");
+const infoPopup = document.getElementById("infoPopup");
+const textarea = document.getElementById("codeInput");
+const grabBar = document.getElementById("grabBar");
+const iframe = document.getElementById('frameExplanation');
 let isDragging = false;
 
-if (infoButton) {
-    //Toggle info popup
+// AI Conversation history array init
+let conversationHistory = [{
+    role: 'system',
+    content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
+}];
+
+// =========================== INFO POPUP ===================================
+if (infoButton && infoPopup) {
     infoButton.addEventListener("click", function () {
-        // Check if the popup is currently visible
-        if (infoPopup.style.display === "block") {
-            infoPopup.style.display = "none"; // Hide the popup if it's already visible
-            infoButton.innerHTML = " 🛈 Info "; // Change button text back
-        } else {
-            infoPopup.style.display = "block"; // Show the popup if it's hidden
-            infoButton.innerHTML = " ✖ Close "; // Change button text to "Close"
-        }
+        const isVisible = (infoPopup.style.display === "block");
+        infoPopup.style.display = isVisible ? "none" : "block";
+        infoButton.innerHTML = isVisible ? " 🛈 Info " : " ✖ Close ";
     });
 }
 
-//Initialize conversation history array w/ prompt
-let conversationHistory = [{
-    role: 'system',
-    content: [
-        /* PROMPT */
-        'You are the best software engineer in the world. ',
-        'You have decades of experience in understanding and ',
-        'explaining any kind of code you encounter.'
-    ].join('')
-}]
+
 
 //Setup parse function
 var goButton = document.getElementById('goButton');
@@ -51,6 +41,7 @@ if (goButton) {
 
         //Get references to page elements
         var textarea = document.getElementById('codeInput');
+        inputText = document.getElementById("codeInput").value;
         var submitButton = document.getElementById('goButton');
 
         //Send button click to explanation frame
@@ -74,18 +65,15 @@ if (goButton) {
         textarea.parentNode.replaceChild(highlightArea, textarea); //Replace text area w highlight area
 
         //Create the back button
-        //backButton.classList.add('btn', 'btn-dark');
         backButton.id = 'backButton'
         backButton.textContent = "⮜ (Back!)";
         submitButton.parentNode.replaceChild(backButton, submitButton); //Replace submit button w back button
-
 
         //Make back button restore textarea and submit button
         backButton.addEventListener('click', function () {
             parsing = false;
             highlightArea.parentNode.replaceChild(textarea, highlightArea);
             backButton.parentNode.replaceChild(submitButton, backButton);
-
 
             if (iframe.contentWindow) {
                 iframe.contentWindow.postMessage({
@@ -94,10 +82,34 @@ if (goButton) {
             } else {
                 console.log("no iframe!")
             }
+            
+            /* Clear convo */
+            console.log("convo cleared!");
+            conversationHistory = [{
+                role: 'system',
+                content: [
+                    /* PROMPT */
+                    'You are the best software engineer in the world. ',
+                    'You have decades of experience in understanding and ',
+                    'explaining any kind of code you encounter.'
+                ].join('')
+            }]
+        });
+
+        // Add submitted code for context
+        conversationHistory.push({
+            role: 'system',
+            content: [
+                `
+                'The user has submitted a block of code',
+                'for analysis. They will highlight parts',
+                'of this code for analysis. Your explanations',
+                'must consider this block for context.',
+                ${inputText}`
+            ].join('')
         });
     });
 }
-
 
 // Check highlighted text
 function checkHighlightedText() {
@@ -107,12 +119,8 @@ function checkHighlightedText() {
     // Check if highlighted text is in the highlight area and if anything is highlighted
     if (newSelectedText && highlightArea.textContent.includes(newSelectedText)) {
         selectedText = newSelectedText;
-        console.log("Highlighted: ", selectedText);
-    } else {
-        console.log("No text highlighted.");
     }
 }
-
 
 //Check for enter keypress and parse selected text if yes
 document.addEventListener('keydown', async function (event) {
@@ -124,17 +132,16 @@ document.addEventListener('keydown', async function (event) {
         if (window.currentPage == 1) {
             console.log("Entered explanation case!");
 
-            // Define iframe variables
-            // let iframe = document.querySelector("iframe");
-
             // ----- First Prompt: Full AI Explanation -----
             conversationHistory.push({
                 role: 'system',
+                // Add - Specific sections - No code = no response - 
                 content: [
                     'As explained in the last prompt ',
                     'You are the best software engineer in the world. ',
                     'You have decades of experience in understanding and ',
                     'explaining any kind of code you encounter. ',
+                    'Make sure to consider the context of the code.',
                     'First, understand the function and purpose of the code. ',
                     'After, craft a concise but detailed explanation ',
                     'that summarizes what the code does. Ensure that the ',
@@ -146,19 +153,9 @@ document.addEventListener('keydown', async function (event) {
                     'You should also format your response nicely in HTML. DO NOT just output',
                     'a block of text. Use HTML Bullet points, Line seperators, etc and always start',
                     'the title header with h1 and subheaders with h3.',
-                    'Make sure to include blank lines for readability.'
                 ].join('')
             });
 
-            //Check for duplicate input
-            // if (selectedText === document.getElementById('aiOutput').getAttribute('data-last-query')) {
-            //     console.log("bruh");
-            //     return;
-            // }
-            // document.getElementById('aiOutput').setAttribute('data-last-query', selectedText);
-
-            //Dummy loading text
-            // if (aiOutput) aiOutput.innerHTML = "Generating response...";
             iframe.contentWindow.postMessage({
                 explanation: 'Generating response...'
             }, "*");
@@ -167,6 +164,10 @@ document.addEventListener('keydown', async function (event) {
                 role: 'user',
                 content: selectedText
             });
+
+            console.log("Final Convo")
+            console.log(conversationHistory)
+
 
             try {
                 const response1 = await fetch(`https://parserpro.onrender.com/parse`, {
@@ -397,7 +398,6 @@ document.addEventListener('keydown', async function (event) {
 });
 
 // Grab bar
-
 grabBar.addEventListener("mousedown", (e) => {
     isDragging = true;
     document.body.style.cursor = "ns-resize";

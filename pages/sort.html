@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Algorithms Visualization</title>
+    <link rel="stylesheet" href="../styles/sort.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="explanation.html">Explanation</a>
+        <a href="sort.html" class="current">Visualization</a>
+        <a href="trees.html">Binary Tree</a>
+    </div>
+
+    <h1>Sorting Algorithms Visualization</h1>
+
+    <!-- DEBUG -->
+     
+    <!-- Dropdown for sorting method -->
+    <!-- <select id="sortMethod">
+        <option value="bubble">Bubble Sort</option>
+        <option value="insertion">Insertion Sort</option>
+        <option value="selection">Selection Sort</option>
+        <option value="quick">Quick Sort</option>
+        <option value="merge">Merge Sort</option>
+        <option value="counting">Counting Sort</option>
+        <option value="radix">Radix Sort</option>
+        <option value="heap">Heap Sort</option>
+        <option value="bucket">Bucket Sort</option>
+    </select> -->
+
+    <!-- <input type="text" id="arrayInput" placeholder="Enter array (e.g. 5, 3, 8, 1, 2)" /> -->
+
+    <!-- Button to trigger sorting -->
+    <button id="generateButton" onclick="generateAndSort()">Generate and Sort Array</button>
+
+    <div id="arrayContainer"></div>
+
+    <!-- Previous and Next Step Buttons -->
+    <button id="prev" onclick="prevStep()">Prev</button>
+    <button id="next" onclick="nextStep()">Next</button>
+
+    <div>
+        <p>Step: <span id="stepNumber">0</span></p>
+    </div>
+
+    <script src="../scripts/script2.js"></script>
+    <script src="../scripts/sortscript.js"></script>
+</body>
+
+</html>

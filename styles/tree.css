@@ -1,21 +1,66 @@
+/* Reset and Base Styles */
+html,
 body {
-    font-family: 'Franklin Gothic light', 'Arial Narrow', Arial, sans-serif;
-    background-color: #181818;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #181818;
+    color: white;
 }
 
-.container {
+/* Navbar Styling */
+.navbar {
+    background-color: #181818;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    height: 50px;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: grey;
     text-align: center;
-    background-color: #fff;
+    padding: 14px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 22px;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.navbar a:hover {
+    color: #fff;
+}
+
+.navbar a:active {
+    text-decoration: underline;
+    text-decoration-color: #0078d7;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+.navbar a.current {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: #0078d7;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+/* Container Styling */
+.container {
+    margin-top: 60px;
+    text-align: center;
+    background-color: #181818;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Input and Button Styling */
 input[type="text"] {
     padding: 8px;
     width: 200px;
@@ -27,12 +72,13 @@ button {
     cursor: pointer;
 }
 
+/* Tree Container */
 #treeContainer {
     margin-top: 20px;
     padding: 10px;
     border: 3px solid #3498db;
     border-radius: 8px;
-    background-color: #fafafa;
+    background-color: #1f1f1f;
     width: auto;
     height: auto;
     position: relative;

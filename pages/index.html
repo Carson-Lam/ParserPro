@@ -5,21 +5,15 @@
     <title> Code Visualizer </title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="styles\main.css">
-    <!-- PRISM CDN: <link href="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/themes/prism.min.css" rel="stylesheet"> --> 
-    <link href="styles/prism.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link href="../styles/prism.css" rel="stylesheet"/>
 </head>
 
 <body>
     <div class="container-fluid mt-3 mx-auto" id="pageContainer">
-        <!-- <div class="container-fluid mt-3 mx-auto"> -->
-        <div class="side-bar">
-            <img src="images/SideBar2.png" class="side-bar-img">
-        </div>
         <div class="top-bar">
-            <!-- <img src="images/TopBar2.png" class="top-bar-img"> -->
             <button id="fileElement">
-                <img src="images/file.png" id="fileIcon">
+                <img src="../images/file.png" id="fileIcon">
                 YourCode.txt
                 <span id="closeX" onclick="closeFile(event)">✕</span>
             </button>
@@ -36,7 +30,6 @@
                 </form>
                 <div id = "grabBar"></div>
             </div>
-
 
             <div id="frameOutput">
                 <iframe id="frameExplanation" src="explanation.html" frameborder="0"
@@ -61,12 +54,11 @@
     </div>
 
     <!--Script-->
-    <script src="scripts/script2.js"></script>
-    <!-- PRISM CDN: <script src="https://cdn.jsdelivr.net/npm/prismjs@1.30.0/prism.min.js"></script> -->
+    <script src="../scripts/script2.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"
         integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous">
     </script>
-    <script src="scripts\prism.js"></script>
+    <script src="../scripts/prism.js"></script>
 </body>
 
 </html>
