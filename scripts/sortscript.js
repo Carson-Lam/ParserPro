@@ -9,18 +9,95 @@ let sortSteps = [];
 let currentStepIndex = 0;
 let algorithmName = 'Unknown Algorithm';
 
+// =========================== DOM ELEMENTS ===================================
+const arrayContainer = document.getElementById('arrayContainer');
+const statusMessage = document.getElementById('statusMessage');
+const stepNumber = document.getElementById('stepNumber');
+const totalSteps = document.getElementById('totalSteps');
+const algorithmNameEl = document.getElementById('algorithmName');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+
 // =========================== LISTEN FOR PARENT MESSAGES ===================================
 window.addEventListener('message', function(event) {
-    if (event.data?.action === 'generateVisualization') {
-        console.log('Received visualization request:', event.data);
-        generateAndSort(event.data.algorithm, event.data.arrayData);
+    if (event.data?.visualization) {
+        const content = event.data.visualization;
+
+        // Show loading state first on UI
+        if (content === 'Detecting sorting algorithm...') {
+            showLoadingState();
+        } 
+        // Show error state on UI
+        else if (content === 'No sorting algorithm detected in the highlighted code.'){
+            showErrorState(content);
+        } 
+        else {
+            generateAndSort(content.algorithm, content.arrayData);
+        }
     }
 
-    if (event.data?.vizError) {
-        document.getElementById('statusMessage').textContent = event.data.vizError;
-        document.getElementById('statusMessage').style.color = '#ff6b6b';
+    // Handle going back to editing mode
+    if (event.data?.action === 'backButtonClicked') {
+        resetToEmptyState();
+    }
+
+    // Handle parse button click
+    if (event.data?.action === 'goButtonClicked') {
+        resetToEmptyState();
     }
 });
+
+// =========================== UI STATE FUNCTIONS ===================================
+
+function showLoadingState() {
+    if (!arrayContainer) return;
+    arrayContainer.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            <div class="loading-text">Generating visualization...</div>
+        </div>
+    `;
+    statusMessage.textContent = 'AI is analyzing your code...';
+    statusMessage.classList.add('active');    
+}
+
+function showErrorState(message) {
+    arrayContainer.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-icon">⚠</div>
+            <div class="empty-state-text">${message}</div>
+        </div>
+    `;
+    statusMessage.textContent = 'Error occurred';
+    statusMessage.style.color = '#ff6b6b';
+    if (prevBtn) prevBtn.disabled = true;    // Disable controls
+    if (nextBtn) nextBtn.disabled = true;
+}
+
+function resetToEmptyState() {
+    sortSteps = [];
+    currentStepIndex = 0;
+    algorithmName = 'Unknown Algorithm';
+    
+    if (arrayContainer) {
+        arrayContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-text">
+                    Parse code and highlight a sorting algorithm to visualize
+                </div>
+            </div>
+        `;
+    }
+    
+    statusMessage.textContent = '';
+    
+    if (stepNumber) stepNumber.textContent = '0';
+    if (totalSteps) totalSteps.textContent = '0';
+    if (algorithmNameEl) algorithmNameEl.textContent = 'No Algorithm';
+    
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+}
 
 // =========================== SORTING ALGORITHMS ===================================
 function bubbleSort(arr) {
@@ -249,7 +326,7 @@ function mergeSort(arr) {
     return steps;
 }
 
-// For now, use selection sort as fallback
+// Use selection sort as fallback for rarer, unimplemented algorithms 
 function heapSort(arr) {
     return selectionSort(arr);
 }
@@ -290,13 +367,11 @@ function getSortingSteps(algorithm, array) {
 // =========================== VISUALIZATION ===================================
 
 function renderStep(step) {
-    const container = document.getElementById('arrayContainer');
-    if (!container) return;
     
     const { array, comparing = [], swapping = [], sorted = [] } = step;
     const maxVal = Math.max(...array);
     
-    container.innerHTML = '';
+    arrayContainer.innerHTML = '';
     
     array.forEach((value, index) => {
         const bar = document.createElement('div');
@@ -319,20 +394,17 @@ function renderStep(step) {
         valueLabel.textContent = value;
         bar.appendChild(valueLabel);
         
-        container.appendChild(bar);
+        arrayContainer.appendChild(bar);
     });
 }
 
 function updateUI() {
-    document.getElementById('stepNumber').textContent = currentStepIndex + 1;
-    document.getElementById('totalSteps').textContent = sortSteps.length;
-    document.getElementById('algorithmName').textContent = algorithmName;
+    if (stepNumber) stepNumber.textContent = currentStepIndex + 1;
+    if (totalSteps) totalSteps.textContent = sortSteps.length;
+    if (algorithmNameEl) algorithmNameEl.textContent = algorithmName;
     
-    const prevBtn = document.getElementById('prev');
-    const nextBtn = document.getElementById('next');
-    
-    prevBtn.disabled = currentStepIndex === 0;
-    nextBtn.disabled = currentStepIndex >= sortSteps.length - 1;
+    if (prevBtn) prevBtn.disabled = currentStepIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentStepIndex >= sortSteps.length - 1;
     
     if (sortSteps.length > 0) {
         renderStep(sortSteps[currentStepIndex]);
@@ -344,27 +416,38 @@ function updateUI() {
 function generateAndSort(algorithm, arrayDataStr) {
     console.log('Generating visualization for:', algorithm, arrayDataStr);
     
-    // Parse the array data
-    const array = arrayDataStr
-        .split(',')
-        .map(s => parseInt(s.trim()))
-        .filter(n => !isNaN(n));
-    
-    if (array.length === 0) {
-        console.error('No valid array data');
-        document.getElementById('statusMessage').textContent = 'Error: No valid array data found';
-        return;
-    }
-    
-    // Generate sorting steps
-    sortSteps = getSortingSteps(algorithm, array);
-    currentStepIndex = 0;
-    
-    console.log(`Generated ${sortSteps.length} steps for ${algorithmName}`);
-    
-    updateUI();
-    
-    document.getElementById('statusMessage').textContent = `Ready: ${sortSteps.length} steps`;
+    showLoadingState(); 
+
+    setTimeout(() => {
+        try {
+            // Parse the array data
+            const array = arrayDataStr
+                .split(',')
+                .map(s => parseInt(s.trim()))
+                .filter(n => !isNaN(n));
+            
+            if (array.length === 0) {
+                showErrorState('No valid array data found');
+                return;
+            }
+            
+            // Generate sorting steps
+            sortSteps = getSortingSteps(algorithm, array);
+            currentStepIndex = 0;
+            
+            console.log(`Generated ${sortSteps.length} steps for ${algorithmName}`);
+            
+            updateUI();
+            
+            if (statusMessage) {
+                statusMessage.textContent = `Ready: ${sortSteps.length} steps generated`;
+                statusMessage.style.color = '#007acc';
+            }
+        } catch (error) {
+            console.error('Visualization error:', error);
+            showErrorState('Failed to generate visualization');
+        }
+    }, 100);
 }
 
 function nextStep() {

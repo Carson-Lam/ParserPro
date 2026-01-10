@@ -23,24 +23,18 @@
         </header>
 
         <div class="visualization-wrapper">
-            <button class="btn btn-secondary" id="prev" onclick="prevStep()" disabled>
+            <button class="btn" id="prev" onclick="prevStep()" disabled>
                 ← Prev
             </button>
             <div id="arrayContainer">
                 <div class="empty-state">
-                    <div class="empty-state-icon"></div>
                     <div class="empty-state-text">Parse code and highlight a sorting algorithm to begin</div>
                 </div>
             </div>
-            <button class="btn btn-secondary" id="next" onclick="nextStep()" disabled>
+            <button class="btn" id="next" onclick="nextStep()" disabled>
                 Next →
             </button>
         </div>
-
-        <!-- <div class="controls">
-
-
-        </div> -->
 
         <div class="step-info">
             <div class="label">Current Step</div>
@@ -52,7 +46,7 @@
         <div class="status-message" id="statusMessage"></div>
     </div>
 
-    <script src="../scripts/script2.js"></script>
+    <script src="../scripts/handler.js"></script>
     <script src="../scripts/sortscript.js"></script>
 </body>
 

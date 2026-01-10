@@ -50,7 +50,7 @@ body {
 
 /* Main Container */
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto; /* Center */
     padding: 40px 20px;
 }
@@ -83,31 +83,11 @@ body {
     width: 100%;
     min-height: 400px;
     background-color: #1f1f1f;
-    border: 1px solid #474747;
+    border: none;
     border-radius: 4px;
     padding: 30px;
     position: relative;
-}
-
-/* Empty State */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 340px;
-    color: #858585;
-}
-
-.empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-}
-
-.empty-state-text {
-    font-size: 16px;
-    text-align: center;
+    
 }
 
 /* AI Analysis Output */
@@ -194,6 +174,27 @@ body {
 
 .analysis-content table td {
     color: #d4d4d4;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 340px;
+    color: #858585;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 16px;
+    text-align: center;
 }
 
 /* Loading State */

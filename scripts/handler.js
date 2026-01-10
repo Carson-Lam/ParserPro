@@ -6,6 +6,7 @@ let inputText = "";
 let fileContext = inputText; // For trimming
 let parsing = false;
 let currentPage = 1;
+let currentAbortController = null; // For cancelling API reqs on pg swap, back button
 window.currentPage = currentPage;
 
 // Visualization state
@@ -34,6 +35,11 @@ let conversationHistory = [{
 window.addEventListener('message', function(event) {
     if (event.data?.pageNumber !== undefined) {
         window.currentPage = event.data.pageNumber;
+
+        if (currentAbortController) {
+            currentAbortController.abort();
+        }
+
         console.log('Page changed to:', window.currentPage);
     }
 });
@@ -73,30 +79,30 @@ if (goButton && textarea) {
         // Create the back button
         const backButton = document.createElement('button');
         backButton.id = 'backButton'
-        backButton.textContent = "⮜ (Back!)";
+        backButton.textContent = "⮜ [ EDIT MODE ]";
         goButton.parentNode.replaceChild(backButton, goButton); 
 
         // Handle back button click
         backButton.addEventListener('click', function () {
-            parsing = false;
-            highlightArea.parentNode.replaceChild(textarea, highlightArea);
-            backButton.parentNode.replaceChild(goButton, backButton);
-
-            if (iframe?.contentWindow) {
-                iframe.contentWindow.postMessage({ action: 'backButtonClicked' }, '*');
-            } 
-
             // Reset all states
+            if (currentAbortController) {
+                currentAbortController.abort();
+                console.log('Cancelled in-flight API request');
+            }
             conversationHistory = [{
                 role: 'system',
                 content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
             }];
-
             detectedAlgorithm = null;
             extractedArray = null;
-
             console.log("all states cleared!");
 
+            parsing = false;
+            highlightArea.parentNode.replaceChild(textarea, highlightArea);
+            backButton.parentNode.replaceChild(goButton, backButton);
+            if (iframe?.contentWindow) {
+                iframe.contentWindow.postMessage({ action: 'backButtonClicked' }, '*');
+            } 
         });
 
         // Add code context to conversation, but trim files that are too large (save tokens!!)
@@ -110,7 +116,6 @@ if (goButton && textarea) {
         } else {
             fileContext = inputText;
         }
-
         conversationHistory.push({
             role: 'system',
             content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
@@ -131,7 +136,7 @@ function checkHighlightedText() {
 }
 
 // ======================== CALLING AI FUNCTIONS =================================
-// Trim conversation history w sliding window to Keep  history manageable
+// Function to trim conversation history w sliding window to keep history manageable
 function trimConversationHistory() {
     const MAX_HISTORY_ITEMS = 10; // Keep last 10 messages (5 exchanges)
     
@@ -144,34 +149,52 @@ function trimConversationHistory() {
     } 
 }
 
-async function callAI(systemPrompt) {
-    conversationHistory.push({ role: 'system', content: systemPrompt });
-    conversationHistory.push({ role: 'user', content: selectedText })
+// Function to callAI, params: (page function prompt, keep history yes/no)
+async function callAI(systemPrompt, persistHistory = true) {
+    const messagesToSend = persistHistory 
+        ? [...conversationHistory, 
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: selectedText }]
+        : [ // If history is not kept, don't use conversationHistory array
+            { role: 'system', content: 'You are an expert software engineer with decades of experience in understanding and explaining code.' },
+            { role: 'system', content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}` },
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: selectedText }
+        ];
     try {
+        currentAbortController = new AbortController();
+
+        // Fetch block 
+        // Fetch syntax: {method, headers, body(key1, key2)}
         const response = await fetch(`https://parserpro.onrender.com/parse`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                messages: conversationHistory,
-                model: 'llama-3.3-70b-versatile'
-            })
+                messages: messagesToSend,
+                model: 'llama-3.3-70b-versatile' 
+            }),
+            signal: currentAbortController.signal
         });
 
         const completion = await response.json();
         console.log('Full API response:', completion);
         const airesponse = completion.choices[0].message.content.trim();
         
-        conversationHistory.push({
-            role: 'assistant',
-            content: airesponse
-        });
-        
-        trimConversationHistory(); 
+        if (persistHistory) {
+            conversationHistory.push({role: 'assistant', content: airesponse});
+            trimConversationHistory(); 
+        }
 
         return airesponse;
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('API request cancelled');
+            return null;
+        }
         console.error('AI API Error: ', error.message);
         return null;
+    } finally {
+        currentAbortController = null;
     }
 }
 
@@ -202,7 +225,7 @@ async function handleExplanationPage() {
         iframe.contentWindow.postMessage({ explanation: 'Generating response...' }, "*");
     }
 
-    const explanation = await callAI(prompt)
+    const explanation = await callAI(prompt, true);
 
     if (explanation && iframe?.contentWindow) {
         iframe.contentWindow.postMessage({ explanation: explanation}, "*");
@@ -216,24 +239,23 @@ async function handleVisualizationPage() {
     // Extract algorithm from code, return [one word identifier]
     const algorithmPrompt = `Analyze the code and identify if it contains a sorting algorithm.
     Respond with ONLY one word from this list: bubble, insertion, selection, quick, merge, counting, radix, heap, bucket
-    If no sorting algorithm is found, respond with: default`;
-
-    let algorithm = await callAI(algorithmPrompt);
+    Only the word should be returned. If no sorting algorithm is found, respond with: default`;
+    if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ visualization: 'Detecting sorting algorithm...' }, "*");
+    }
+    let algorithm = await callAI(algorithmPrompt, false);
     algorithm = algorithm?.toLowerCase().trim()  || 'default'; //In case AI gives inconsistent case
     console.log(algorithm);
 
+    // ERROR: Pass error state to frame
     if (!algorithm || algorithm === 'default') {
-        console.log(" No sorting algorithm detected! ");
-        
         if (iframe?.contentWindow) {
             iframe.contentWindow.postMessage({ 
-                vizError: 'No sorting algorithm detected in the highlighted code.' 
+                visualization: 'No sorting algorithm detected in the highlighted code.' 
             }, '*');
         }
         return;
     }
-
-    console.log("Detected algorithm: ", algorithm)
 
     // Extract array from code, return [array as list]
     const arrayPrompt = `Analyze the code and identify if it contains an array
@@ -242,23 +264,21 @@ async function handleVisualizationPage() {
     - If not, generate a dummy array with 5-10 random integers between 1-50.
     Respond with ONLY the array values, comma seperated, no brackets or extra text.`;
 
-    const arrayData = await callAI(arrayPrompt);
+    const arrayData = await callAI(arrayPrompt, false);
     console.log(arrayData);
 
+    // SUCCESS: Pass successful output state to frame
     if (arrayData) {
         
         detectedAlgorithm = algorithm;
         extractedArray = arrayData;
         
-        // Send action to iframe
-        if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage({ 
-                action: 'generateVisualization',
-                algorithm: algorithm,
+        iframe.contentWindow.postMessage({ 
+            visualization: {
+                algorithm: algorithm, 
                 arrayData: arrayData
-            }, '*');
-
-        }
+            }
+        }, '*');
     }
 }
 
@@ -266,7 +286,7 @@ async function handleVisualizationPage() {
 async function handleComplexityPage() {
     console.log("Analyzing time complexity...");
 
-    // Extract algorithm from code, return [one word identifier]
+    // Analyze code, return [complexity values]
     const complexityPrompt = `Analyze the complexity of the highlighted code.
 
     You MUST follow this response structure:
@@ -292,8 +312,19 @@ async function handleComplexityPage() {
         iframe.contentWindow.postMessage({ explanation: 'Analyzing complexity...' }, "*");
     }
 
-    const complexity = await callAI(complexityPrompt);
+    const complexity = await callAI(complexityPrompt, false);
 
+    // ERROR: Pass error state to frame
+    if (!complexity || complexity === 'MISSING CODE') {
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({ 
+                explanation: 'Failed to analyze time complexity.' 
+            }, '*');
+        }
+        return;
+    }
+
+    // SUCCESS: Pass successful output state to frame
     if (complexity && iframe?.contentWindow) {
         iframe.contentWindow.postMessage({ explanation: complexity }, "*");
     }
@@ -303,7 +334,6 @@ async function handleComplexityPage() {
 document.addEventListener('keydown', async function (event) {
     if (event.key !== 'Enter' || !parsing) return;
 
-    console.log("Processing highlighted code...");
     checkHighlightedText();
 
     // Don't call handlers if no text selected

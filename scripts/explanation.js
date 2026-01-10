@@ -1,7 +1,10 @@
-// Set current page identifier
-window.onload = function () {
+// =========================== GLOBAL STATE ===================================
+window.onload = function() {
     window.currentPage = 1;
+    console.log("Sort page loaded");
+    window.parent.postMessage({ pageNumber: 1 }, '*');
 };
+
 
 // Listen for messages from parent window (index.html iframe communication)
 window.addEventListener("message", function (event) {
