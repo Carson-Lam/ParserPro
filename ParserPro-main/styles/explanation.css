@@ -1,0 +1,261 @@
+/* Reset and Base Styles */
+html,
+body {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
+    background-color: black;
+}
+
+/* Navbar Styling */
+.navbar {
+    position: sticky;
+    background-color: #181818;
+    overflow: hidden;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    height: 50px;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: grey;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    line-height: 22px;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.navbar a:hover {
+    color: #fff;
+}
+
+.navbar a:active {
+    text-decoration: underline;
+    text-decoration-color: #0078d7;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+.navbar a.current {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: #0078d7;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+/* Main Content Area */
+.main-content {
+    margin: 10px 20px 20px 20px;
+    max-width: 100%;
+}
+
+
+/* Scrollbar Styling */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 12px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+    width: 12px;
+    background: #3C3C3C;
+    min-height: 44px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* AI Output Styling */
+#aiOutput {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    font-size: 18px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    color: white;
+    width: 100%;
+}
+
+#stylingHeader {
+    white-space: pre-wrap;
+    margin: 0px;
+}
+
+/* Stage Header Animation */
+.stageHeader {
+    white-space: nowrap;
+    display: inline-block;
+    border-right: .5em solid white;
+    margin: 0px;
+    letter-spacing: .05em;
+    animation:
+        typing 1.0s steps(15, end) forwards,
+        blink-caret .75s step-end infinite,
+        hide-caret 0s 5s forwards;
+    overflow: hidden;
+    max-width: 0;
+    width: auto;
+    vertical-align: top;
+}
+
+@keyframes typing {
+    from {
+        max-width: 0
+    }
+    to {
+        max-width: 100%;
+    }
+}
+
+@keyframes blink-caret {
+    from,
+    to {
+        border-color: transparent
+    }
+    50% {
+        border-color: white;
+    }
+}
+
+@keyframes hide-caret {
+    to {
+        border-color: transparent;
+    }
+}
+
+/* Explanation Description Animation */
+.stylingDescript {
+    visibility: hidden;
+    animation: appear 0s 0.9s forwards;
+}
+
+@keyframes appear {
+    to {
+        visibility: visible;
+    }
+}
+
+#explanationHeader,
+#explanationDescript {
+    margin: 0px;
+}
+
+/* Override Styles for Active Parsing */
+.header-override {
+    font-style: bold;
+    font-size: 15px !important;
+    animation: pulse 5.0s ease-in-out infinite !important;
+    font-family: monospace;
+    white-space: pre;
+}
+
+@keyframes pulse {
+    0% {
+        color: #90c0e0;
+    }
+    50% {
+        color: #3294d5;
+    }
+    100% {
+        color: #90c0e0;
+    }
+}
+
+.descript-override {
+    color: #6a9955;
+    font-style: italic;
+    margin-right: 20px;
+}
+
+/* AI Text Styling */
+.ai-text {
+    color: white;
+    font-style: normal;
+}
+
+.ai-text h1 {
+    color: #007acc;
+    margin-bottom: 0px;
+}
+
+.ai-text h2,
+.ai-text h3 {
+    color: #90c0e0;
+    margin-bottom: 0px;
+}
+
+.ai-text ul li::marker {
+    color: #90c0e0;
+}
+
+.ai-text pre {
+    background-color: #1f1f1f;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+/* Syntax Highlighting Classes */
+.comment {
+    color: #6a9955;
+    font-style: italic;
+}
+
+.keyword {
+    color: #569cd6;
+    font-weight: bold;
+}
+
+.keyword-void {
+    color: #4ec9b0;
+    font-weight: bold;
+}
+
+.method-name {
+    color: #dcdcaa;
+}
+
+.class-name {
+    color: #4ec9b0;
+}
+
+.variable {
+    color: white;
+}
+
+.parentheses {
+    color: #ff69b4;
+}
+
+.braces {
+    color: #ff69b4;
+}
+
+.methodParentheses {
+    color: #ebc00a;
+}
+
+.methodBraces {
+    color: #ebc00a;
+}
+
+.semicolon {
+    color: #d4d4d4;
+}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Complexity</title>
+    <link rel="stylesheet" href="../styles/complexity.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="explanation.html">Explanation</a>
+        <a href="sort.html">Visualization</a>
+        <a href="complexity.html" class="current">Time Complexity</a>
+    </nav>
+
+    <div class="container">
+        <header class="header">
+            <h1>Time & Space Complexity Analysis</h1>
+            <div class="subtitle">Algorithm performance analysis powered by AI</div>
+        </header>
+
+        <div class="analysis-wrapper">
+            <div id="analysisContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏱</div>
+                    <div class="empty-state-text">
+                        Parse code and highlight an algorithm to analyze its complexity
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+    <script src="../scripts/handler.js"></script>
+    <script src="../scripts/complexity.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+</body>
+</html>

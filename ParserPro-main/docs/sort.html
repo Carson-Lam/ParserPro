@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Algorithms Visualization</title>
+    <link rel="stylesheet" href="../styles/sort.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="explanation.html">Explanation</a>
+        <a href="sort.html" class="current">Visualization</a>
+        <a href="complexity.html">Time Complexity</a>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>Sorting Algorithm Visualization</h1>
+            <div class="algorithm-name" id="algorithmName">No algorithm detected</div>
+        </header>
+
+        <div class="visualization-wrapper">
+            <button class="btn" id="prev" onclick="prevStep()" disabled>
+                ← Prev
+            </button>
+            <div id="arrayContainer">
+                <div class="empty-state">
+                    <div class="empty-state-text">Parse code and highlight a sorting algorithm to begin</div>
+                </div>
+            </div>
+            <button class="btn" id="next" onclick="nextStep()" disabled>
+                Next →
+            </button>
+        </div>
+
+        <div class="step-info">
+            <div class="label">Current Step</div>
+            <div class="value">
+                <span id="stepNumber">0</span> / <span id="totalSteps">0</span>
+            </div>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <script src="../scripts/handler.js"></script>
+    <script src="../scripts/sortscript.js"></script>
+</body>
+
+</html>
+
+
+<!-- DEBUG -->
+    
+<!-- Dropdown for sorting method -->
+<!-- <select id="sortMethod">
+    <option value="bubble">Bubble Sort</option>
+    <option value="insertion">Insertion Sort</option>
+    <option value="selection">Selection Sort</option>
+    <option value="quick">Quick Sort</option>
+    <option value="merge">Merge Sort</option>
+    <option value="counting">Counting Sort</option>
+    <option value="radix">Radix Sort</option>
+    <option value="heap">Heap Sort</option>
+    <option value="bucket">Bucket Sort</option>
+</select> -->
+
+<!-- <input type="text" id="arrayInput" placeholder="Enter array (e.g. 5, 3, 8, 1, 2)" /> -->

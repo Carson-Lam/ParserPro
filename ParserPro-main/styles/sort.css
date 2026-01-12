@@ -1,0 +1,262 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #181818;
+    color: #d4d4d4;
+    overflow-x: hidden;
+}
+
+/* Navbar */
+.navbar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 50px;
+    background-color: #181818;
+    border-bottom: 1px solid #2c2c2c;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+
+.navbar a {
+    display: inline-block;
+    padding: 14px 20px;
+    color: #858585;
+    text-decoration: none;
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+.navbar a:hover {
+    color: #ffffff;
+}
+
+.navbar a.current {
+    color: #ffffff;
+    text-decoration: underline;
+    text-decoration-color: #007acc;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 5px;
+}
+
+/* Main Container */
+.container {
+    max-width: 1400px;
+    margin: 0 auto; /* Center */
+    padding: 40px 20px;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.header .algorithm-name {
+    font-size: 16px;
+    color: #007acc;
+    font-weight: 500;
+}
+
+/* Visualization Container */
+.visualization-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 36px;
+}
+
+#arrayContainer {
+    width: 100%;
+    height: 400px;
+    background-color: #1f1f1f;
+    border: none;
+    border-radius: 4px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    padding: 20px;
+    position: relative;
+}
+
+/* Array Bars */
+.bar {
+    flex: 1;
+    max-width: 60px;
+    background-color: #007acc;
+    border-radius: 2px 2px 0 0;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.bar-value {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #d4d4d4;
+    font-weight: 500;
+}
+
+.bar.comparing {
+    background-color: #ce9178;
+}
+
+.bar.swapping {
+    background-color: #e74c3c;
+}
+
+.bar.sorted {
+    background-color: #6a9955;
+}
+
+/* Controls */
+.btn {
+    padding: 0px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Segoe UI', sans-serif;
+    width: 5rem;
+    background-color: red;
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border: 1px solid #474747;
+}
+
+.btn:hover {
+    background-color: #474747;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Step Info */
+.step-info {
+    text-align: center;
+    padding: 20px;
+    background-color: #252526;
+    border-radius: 4px;
+}
+
+.step-info .label {
+    font-size: 14px;
+    color: #858585;
+    margin-bottom: 8px;
+}
+
+.step-info .value {
+    font-size: 24px;
+    color: #007acc;
+    font-weight: 600;
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 340px;
+    color: #007acc;
+}
+
+.loading-text {
+    font-size: 16px;
+    margin-top: 16px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #474747;
+    border-top-color: #007acc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #858585;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 16px;
+}
+
+/* Status Message */
+.status-message {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #858585;
+    min-height: 20px;
+}
+
+.status-message.active {
+    color: #007acc;
+}
+
+/* Scrollbar Styling */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 12px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+    width: 12px;
+    background: #3C3C3C;
+    min-height: 44px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
