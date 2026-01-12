@@ -11,10 +11,13 @@ const statusMessage = document.getElementById('statusMessage');
 
 // =========================== LISTEN FOR PARENT MESSAGES ===================================
 window.addEventListener('message', function(event) {
-    // Update frame state based on parsing state from parent
+
+    // Update frame state based on parsing state event recieved from parent
     if (event.data?.parsingState !== undefined) {
         if (!event.data.parsingState) {
             resetToEmptyState();
+        } else {
+            resetToParsingState();
         }
         return;
     }
@@ -59,20 +62,43 @@ function showErrorState(message) {
             <div class="empty-state-text">${message}</div>
         </div>
     `;
+    statusMessage.classList.add('error');
     statusMessage.textContent = 'Error occurred';
-    statusMessage.style.color = '#ff6b6b';
 }
 
 function resetToEmptyState() {
     analysisContainer.innerHTML = `
         <div class="empty-state">
-            <div class="empty-state-icon">⏱</div>
             <div class="empty-state-text">
-                Parse code and highlight an algorithm to analyze its complexity
+ _____ ____ ___ _____ ___ _   _  ____   ____ _____  _    ____ _____ 
+| ____|  _ \\_ _|_   _|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
+|  _| | | | | |  | |  | ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
+| |___| |_| | |  | |  | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
+|_____|____/___| |_| |___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
             </div>
         </div>
     `;
-    statusMessage.textContent = '';
+    statusMessage.classList.remove('error', 'active');
+    statusMessage.textContent = 'Awaiting Input!';
+}
+    function resetToParsingState(){
+
+if (analysisContainer) {
+    analysisContainer.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-state-text active">
+ ____   _    ____  ____ ___ _   _  ____   ____ _____  _    ____ _____ 
+|  _ \\ / \\  |  _ \\/ ___|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
+| |_) / _ \\ | |_) \\___ \\| ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
+|  __/ ___ \\|  _ < ___) | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
+|_| /_/   \\_\\_| \\_\\____/___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
+            </div>
+        </div>
+    `;
+}
+
+    statusMessage.classList.add('active');
+    statusMessage.textContent = 'Awaiting Input!';
 }
 
 function showAnalysis(markdownContent) {

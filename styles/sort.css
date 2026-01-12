@@ -223,6 +223,26 @@ body {
 
 .empty-state-text {
     font-size: 16px;
+    font-family: monospace;
+    white-space: pre;
+}
+
+.empty-state-text.active{
+    color: #007acc;
+    animation: pulse 3.0s ease-in-out infinite !important;
+
+}
+
+@keyframes pulse {
+    0% {
+        color: #1287d4;
+    }
+    50% {
+        color: #90c0e0; 
+    }
+    100% {
+        color: #1287d4;
+    }
 }
 
 /* Status Message */
@@ -236,6 +256,10 @@ body {
 
 .status-message.active {
     color: #007acc;
+}
+
+.status-message.error{
+    color: #ff6b6b;
 }
 
 /* Scrollbar Styling */

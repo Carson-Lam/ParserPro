@@ -161,20 +161,25 @@ body::-webkit-scrollbar-thumb:hover {
 .header-override {
     font-style: bold;
     font-size: 15px !important;
-    animation: pulse 5.0s ease-in-out infinite !important;
     font-family: monospace;
     white-space: pre;
 }
 
+.header-override.active {
+    color: #007acc;
+    animation: pulse 3.0s ease-in-out infinite !important;
+
+}
+
 @keyframes pulse {
     0% {
-        color: #90c0e0;
+        color: #1287d4;
     }
     50% {
-        color: #3294d5;
+        color: #90c0e0; 
     }
     100% {
-        color: #90c0e0;
+        color: #1287d4;
     }
 }
 
@@ -188,6 +193,7 @@ body::-webkit-scrollbar-thumb:hover {
 .ai-text {
     color: white;
     font-style: normal;
+    line-height: 2rem;
 }
 
 .ai-text h1 {

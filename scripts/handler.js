@@ -2,9 +2,11 @@
 
 // Manipulable variables
 let selectedText = "";
+let lastSelectedText = "";
 let inputText = "";
-let fileContext = inputText; // For trimming
+let fileContext = inputText; // For trimming context 
 let parsing = false;
+let enterCooldown = false; // Submission debounce
 let currentPage = 1;
 let currentAbortController = null; // For cancelling API reqs on pg swap, back button
 window.currentPage = currentPage;
@@ -91,7 +93,8 @@ if (goButton && textarea) {
 
         // Handle back button click
         backButton.addEventListener('click', function () {
-            // Reset all states
+
+            // Reset EVERYTHING
             if (currentAbortController) {
                 currentAbortController.abort();
                 console.log('Cancelled in-flight API request');
@@ -102,7 +105,7 @@ if (goButton && textarea) {
             }];
             detectedAlgorithm = null;
             extractedArray = null;
-
+            lastSelectedText = "";
             parsing = false;
             highlightArea.parentNode.replaceChild(textarea, highlightArea);
             backButton.parentNode.replaceChild(goButton, backButton);
@@ -188,8 +191,9 @@ async function callAI(systemPrompt, persistHistory = true) {
         const completion = await response.json();
         console.log('Full API response:', completion);
         const airesponse = completion.choices[0].message.content.trim();
-        
-        if (persistHistory) {
+
+        // If user did not submit code, don't append AI response to history
+        if (persistHistory && airesponse != '# MISSING CODE') { 
             conversationHistory.push({role: 'assistant', content: airesponse});
             trimConversationHistory(); 
         }
@@ -345,27 +349,36 @@ document.addEventListener('keydown', async function (event) {
 
     checkHighlightedText();
 
-    // Don't call handlers if no text selected
-    if (!selectedText) {
-        console.log("No text selected");
+    // Validate submission to save tokens:
+    // - prevent duplicates, - prevent empty selections, - prevent debounce spam
+    if (!selectedText || enterCooldown) {
+        console.log("Invalid selection! Dupliate/Empty/Too Fast submission!");
         return;
     }
+    lastSelectedText = selectedText;
+    enterCooldown = true;
 
-    // Route to appropriate handler based on current page
-    switch (window.currentPage) {
-        case 1:
-            await handleExplanationPage();
-            break;
-        case 2:
-            await handleVisualizationPage();
-            break;
-        case 3:
-            await handleComplexityPage();
-            break;
-        default:
-            console.error("Unknown page:", window.currentPage);
-    }
-    console.log("Conversation Length: " + conversationHistory.length);
+    try{
+        // Route to appropriate handler based on current page
+        switch (window.currentPage) {
+            case 1:
+                await handleExplanationPage();
+                break;
+            case 2:
+                await handleVisualizationPage();
+                break;
+            case 3:
+                await handleComplexityPage();
+                break;
+            default:
+                console.error("Unknown page:", window.currentPage);
+        }
+        console.log("Conversation Length: " + conversationHistory.length);
+    } finally {
+        setTimeout(() => {
+            enterCooldown = false; // Debounce time of 1.5s for enterCooldown flag to reset
+    }, 1500);
+}
 });
 
 // =========================== RESIZABLE TEXTAREA =============================
