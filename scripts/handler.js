@@ -1,11 +1,28 @@
+// =========================== TAB STATE ===================================
+let tabs = [
+    {
+        id: 'tab_0',
+        name: 'Welcome.txt',
+        content: `// WELCOME TO PARSERPRO!`,
+        parsing: false,
+        conversationHistory: [{
+            role: 'system',
+            content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
+        }],
+        fileContext: ''
+    }
+];
+
+let activeTabId = 'tab_0';
+let tabIdCounter = 1;
+let draggedTabId = null;
+let dragOverTabId = null;
+
 // =========================== GLOBAL STATE ===================================
 
 // Manipulable variables
 let selectedText = "";
 let lastSelectedText = "";
-let inputText = "";
-let fileContext = inputText; // For trimming context 
-let parsing = false;
 let enterCooldown = false; // Submission debounce
 let currentPage = 1;
 let currentAbortController = null; // For cancelling API reqs on pg swap, back button
@@ -21,16 +38,422 @@ const infoPopup = document.getElementById("infoPopup");
 const textarea = document.getElementById("codeInput");
 const grabBar = document.getElementById("grabBar");
 const iframe = document.getElementById('frameExplanation');
-const goButton = document.getElementById('goButton');
 const MAX_FILE_SIZE = 1000; // ~ 125 tokens
 let isDragging = false;
 
-// AI Conversation history array init
-let conversationHistory = [{
-    role: 'system',
-    content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
-}];
 
+// =========================== TAB INITIALIZATION ===================================
+function getActiveTab() {
+    return tabs.find(tab => tab.id === activeTabId);
+}
+
+function getTabById(id) {
+    return tabs.find(tab => tab.id === id);
+}
+
+function getTabIndexById(id) {
+    return tabs.findIndex(tab => tab.id === id);
+}
+
+// Create tab: -define properties, -reset conversationHistory, -push to tabs array
+function createNewTab(name = null, content = '') {
+    const newName = name || `Untitled-${tabIdCounter}.txt`;
+    const newTab = {
+        id: `tab_${tabIdCounter}`,
+        name: newName,
+        content: content,
+        parsing: false,
+        conversationHistory: [{
+            role: 'system',
+            content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
+        }],
+        fileContext: content
+    };
+
+    tabs.push(newTab);
+    tabIdCounter++;
+    
+    console.log(`Created new tab: ${newName}`);
+    return newTab.id;
+}
+
+// Switch tabs: -save current tab content, -load new tab content, -update new tab UI, -pass new tab state 
+function switchTab(newTabId) {
+    if (newTabId === activeTabId) return;
+    
+    const oldTab = getActiveTab();
+    const newTab = getTabById(newTabId);
+    
+    if (!newTab) {
+        console.error(`Tab ${newTabId} not found`);
+        return;
+    }
+    
+    saveCurrentTabState();
+    
+    activeTabId = newTabId;
+    console.log(`Switched to tab: ${newTab.name}`);
+    
+    loadTabState(newTab);
+    renderTabs();
+    
+    if (iframe?.contentWindow) {
+        iframe.contentWindow.postMessage({ parsingState: newTab.parsing }, '*');
+    }
+}
+
+// Close tabs: -Don't close if only 1, -Swap to rightmost tab in index (Math.max) if current closed
+function closeTab(tabId) {
+    if (tabs.length === 1) {
+        console.log('Cannot close last tab');
+        return;
+    }
+    
+    const tabIndex = getTabIndexById(tabId);
+    if (tabIndex === -1) return;
+    
+    const closingActiveTab = (tabId === activeTabId);
+    
+    tabs.splice(tabIndex, 1);
+    console.log(`Closed tab: ${tabId}`);
+    
+    if (closingActiveTab) {
+        const newActiveIndex = Math.max(0, tabIndex - 1);
+        switchTab(tabs[newActiveIndex].id);
+    } else {
+        renderTabs();
+    }
+}
+
+// Reorder tabs
+function reorderTab(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    
+    const [movedTab] = tabs.splice(fromIndex, 1);
+    tabs.splice(toIndex, 0, movedTab);
+    
+    console.log(`Reordered tab from ${fromIndex} to ${toIndex}`);
+    renderTabs();
+}
+
+// Save tab: -Save highlight area data in activeTab properties (whether parsing or editing stage)
+function saveCurrentTabState() {
+    const activeTab = getActiveTab();
+    if (!activeTab) return;
+    
+    const textarea = document.getElementById('codeInput');
+    const highlightArea = document.getElementById('highlightArea');
+    
+    if (textarea) {
+        activeTab.content = textarea.value;
+    } else if (highlightArea) {
+        activeTab.content = highlightArea.textContent;
+    }
+}
+
+// Load tab state: Replace tab area data with stored tab.content content (both parsing, edit stages)
+function loadTabState(tab) {
+    const textarea = document.getElementById('codeInput');
+    const highlightArea = document.getElementById('highlightArea');
+    const toggleButton = document.getElementById('toggleParseButton');
+
+    if (tab.parsing) {
+        if (textarea) {
+            const newHighlightArea = document.createElement('pre');
+            newHighlightArea.classList.add('highlightArea');
+            newHighlightArea.id = 'highlightArea';
+            newHighlightArea.innerHTML = Prism.highlight(
+                tab.content, 
+                Prism.languages.javascript, 
+                'javascript'
+            );
+            textarea.parentNode.replaceChild(newHighlightArea, textarea);
+        } else if (highlightArea) {
+            highlightArea.innerHTML = Prism.highlight(
+                tab.content, 
+                Prism.languages.javascript, 
+                'javascript'
+            );
+        }
+        if (toggleButton) {
+            toggleButton.textContent = "⮜ [ EDIT MODE ]";
+            toggleButton.dataset.mode = 'edit';
+        }
+    } else {
+        // Switch to edit mode
+        if (highlightArea) {
+            const newTextarea = document.createElement('textarea');
+            newTextarea.id = 'codeInput';
+            newTextarea.name = 'codeInput';
+            newTextarea.required = true;
+            newTextarea.placeholder = 'Enter your code here...';
+            newTextarea.value = tab.content;
+            highlightArea.parentNode.replaceChild(newTextarea, highlightArea);
+        } else if (textarea) {
+            textarea.value = tab.content;
+        }
+        
+        if (toggleButton) {
+            toggleButton.textContent = "⮞ [ PARSE MODE ]";
+            toggleButton.dataset.mode = 'parse';
+        }
+    }
+}
+
+// Render tabs: Render tab button, active styling, (conditional) close button, using appendChild
+function renderTabs(){
+    const tabContainer = document.getElementById('tabContainer');
+    if (!tabContainer) return; // Prevents getting container before DOM loads
+    tabContainer.innerHTML = '';
+    
+    tabs.forEach((tab, index) => {
+        const tabButton = document.createElement('button');
+        tabButton.className = 'tab-button';
+        tabButton.dataset.tabId = tab.id;
+        tabButton.draggable = true;
+        
+        if (tab.id === activeTabId) {
+            tabButton.classList.add('active');
+        }
+        
+        const fileIcon = document.createElement('img');
+        fileIcon.src = '../images/file.png';
+        fileIcon.className = 'file-icon';
+        tabButton.appendChild(fileIcon);
+        
+        const tabName = document.createElement('span');
+        tabName.className = 'tab-name';
+        tabName.textContent = tab.name;
+        tabButton.appendChild(tabName);
+        
+        if (tabs.length > 1) {
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'tab-close';
+            closeBtn.textContent = '✕';
+            tabButton.appendChild(closeBtn);
+        }
+        
+        tabContainer.appendChild(tabButton);
+    });
+    
+    // Add new tab button
+    const newTabBtn = document.createElement('button');
+    newTabBtn.className = 'new-tab-button';
+    newTabBtn.textContent = '+';
+    newTabBtn.title = 'New tab';
+    tabContainer.appendChild(newTabBtn);
+    
+    // Update scroll fade effect
+    updateScrollFade();
+}
+
+function updateScrollFade() {
+    const tabContainer = document.getElementById('tabContainer');
+    if (!tabContainer) return;
+    
+    const isOverflowing = tabContainer.scrollWidth > tabContainer.clientWidth;
+    const isScrolledToEnd = tabContainer.scrollLeft + tabContainer.clientWidth >= tabContainer.scrollWidth - 5;
+    
+    if (isOverflowing && !isScrolledToEnd) {
+        tabContainer.classList.add('has-overflow');
+    } else {
+        tabContainer.classList.remove('has-overflow');
+    }
+}
+
+// =========================== TAB EVENTS ===================================
+document.addEventListener('DOMContentLoaded', function() {
+    const tabContainer = document.getElementById('tabContainer');
+    if (!tabContainer) return; // Prevents getting container before DOM loads
+
+    // Handle Tab clicks events
+    tabContainer.addEventListener('click', function(e) {
+        const tabButton = e.target.closest('.tab-button');
+        const closeButton = e.target.closest('.tab-close');
+        const newTabButton = e.target.closest('.new-tab-button');
+        
+        if (closeButton && tabButton) {
+            e.stopPropagation();
+            const tabId = tabButton.dataset.tabId;
+            closeTab(tabId);
+        } else if (tabButton) {
+            const tabId = tabButton.dataset.tabId;
+            switchTab(tabId);
+        } else if (newTabButton) {
+            const newId = createNewTab();
+            switchTab(newId);
+        }
+    });
+    
+    // Handle tab Drag and drop events
+    tabContainer.addEventListener('dragstart', function(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton) return;
+        
+        draggedTabId = tabButton.dataset.tabId;
+        tabButton.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    
+    tabContainer.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton || !draggedTabId) return;
+        
+        dragOverTabId = tabButton.dataset.tabId;
+        
+        // Remove all drag-over classes
+        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('drag-over');
+        });
+        
+        // Add drag-over class to current target
+        if (draggedTabId !== dragOverTabId) {
+            tabButton.classList.add('drag-over');
+        }
+    });
+    
+    tabContainer.addEventListener('dragleave', function(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (tabButton) {
+            tabButton.classList.remove('drag-over');
+        }
+    });
+    
+    tabContainer.addEventListener('drop', function(e) {
+        e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        
+        if (!tabButton || !draggedTabId || !dragOverTabId) return;
+        if (draggedTabId === dragOverTabId) return;
+        
+        const fromIndex = getTabIndexById(draggedTabId);
+        const toIndex = getTabIndexById(dragOverTabId);
+        
+        reorderTab(fromIndex, toIndex);
+        
+        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('drag-over', 'dragging');
+        });
+        
+        draggedTabId = null;
+        dragOverTabId = null;
+    });
+    
+    tabContainer.addEventListener('dragend', function(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (tabButton) {
+            tabButton.classList.remove('dragging');
+        }
+        
+        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('drag-over');
+        });
+        
+        draggedTabId = null;
+        dragOverTabId = null;
+    });
+    
+    // Fade effect
+    tabContainer.addEventListener('scroll', updateScrollFade);
+    window.addEventListener('resize', updateScrollFade);
+});
+
+// ======================= TOGGLE PARSE/EDIT BUTTON ===============================
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleButton = document.getElementById('toggleParseButton');
+    if (!toggleButton) return;
+    
+    toggleButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const activeTab = getActiveTab();
+        const currentMode = toggleButton.dataset.mode || 'parse';
+        
+        // Parsing mode enter: Replace text area, feed trimmed input to AI for context, give state to iframe
+        if (currentMode === 'parse') {
+            saveCurrentTabState();
+            activeTab.parsing = true;
+            
+            //Create syntax-highlighted code view using PRISM.js
+            const textarea = document.getElementById('codeInput');
+            if (textarea) {
+                const highlightArea = document.createElement('pre');
+                highlightArea.classList.add('highlightArea');
+                highlightArea.id = 'highlightArea';
+                highlightArea.innerHTML = Prism.highlight(
+                    activeTab.content, 
+                    Prism.languages.javascript, 
+                    'javascript'
+                );
+                textarea.parentNode.replaceChild(highlightArea, textarea);
+            }
+            
+            toggleButton.textContent = "⮜ [ EDIT MODE ]";
+            toggleButton.dataset.mode = 'edit';
+            
+            // Trim input if necessary (save tokens!!), feed to AI for context
+            const inputText = activeTab.content;
+            let fileContext;
+            if (inputText.length > MAX_FILE_SIZE) {
+                const halfSize = MAX_FILE_SIZE / 2;
+                fileContext = 
+                    inputText.substring(0, halfSize) 
+                    + '\n\n... [middle section truncated] ...\n\n'  // Take first few and last few chars to preserve structure
+                    + inputText.substring(inputText.length - halfSize);
+            } else {
+                fileContext = inputText;
+            }
+            activeTab.fileContext = fileContext;
+            activeTab.conversationHistory.push({
+                role: 'system',
+                content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
+            });
+
+            // Give parsing state to iframe
+            if (iframe?.contentWindow) {
+                iframe.contentWindow.postMessage({ parsingState: true }, '*');
+            }
+        // Editing mode enter: Replace text area, feed trimmed input to AI for context, give state to iframe
+        } else {
+            if (currentAbortController) {
+                currentAbortController.abort();
+            }
+            
+            // Reset all states (array, visualization vars, conversation history)
+            activeTab.conversationHistory = [{
+                role: 'system',
+                content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
+            }];
+            activeTab.parsing = false;
+            lastSelectedText = "";
+            detectedAlgorithm = null;
+            extractedArray = null;
+            
+            // Create editing view
+            const highlightArea = document.getElementById('highlightArea');
+            if (highlightArea) {
+                const textarea = document.createElement('textarea');
+                textarea.id = 'codeInput';
+                textarea.name = 'codeInput';
+                textarea.required = true;
+                textarea.placeholder = 'Enter your code here...';
+                textarea.value = activeTab.content;
+                highlightArea.parentNode.replaceChild(textarea, highlightArea);
+            }
+            
+            toggleButton.textContent = "⮞ [ PARSE MODE ]";
+            toggleButton.dataset.mode = 'parse';
+            
+            // Give parsing state to iframe
+            if (iframe?.contentWindow) {
+                iframe.contentWindow.postMessage({ parsingState: false }, '*');
+            }
+        }
+    });
+});
+
+// =========================== PAGE DETECTION ===================================
 // Take pgnum from iframe, stop API calls, give parsing state to iframe
 window.addEventListener('message', function (event) { 
 
@@ -42,11 +465,12 @@ window.addEventListener('message', function (event) {
         if (currentAbortController) {
             currentAbortController.abort();
         }
-            
-        if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage({ parsingState: parsing }, '*');
+         
+        const activeTab = getActiveTab();
+        if (iframe?.contentWindow && activeTab) {
+            iframe.contentWindow.postMessage({ parsingState: activeTab.parsing }, '*');
         }
-        console.log("Passed state parsingState: " + parsing);
+        console.log("Passed state parsingState: " + activeTab.parsing);
 
     }
 });
@@ -57,81 +481,6 @@ if (infoButton && infoPopup) {
         const isVisible = (infoPopup.style.display === "block");
         infoPopup.style.display = isVisible ? "none" : "block";
         infoButton.innerHTML = isVisible ? " 🛈 Info " : " ✖ Close ";
-    });
-}
-
-// =========================== PARSE BUTTON ===================================
-if (goButton && textarea) {
-    goButton.addEventListener('click', function (event) {
-        event.preventDefault();
-        parsing = true;
-        inputText = textarea.value;
-
-        // Give parsing state to iframe
-        if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage({ parsingState: true }, '*');
-            console.log("Passed state parsingState: " + parsing);
-
-        }
-
-        //Create syntax-highlighted code view using PRISM.js
-        const highlightArea = document.createElement('pre');
-        highlightArea.classList.add('highlightArea');
-        highlightArea.id = 'highlightArea';
-        highlightArea.innerHTML = Prism.highlight(
-            textarea.value, 
-            Prism.languages.javascript, 
-            'javascript'
-        ); 
-        textarea.parentNode.replaceChild(highlightArea, textarea); 
-
-        // Create the back button
-        const backButton = document.createElement('button');
-        backButton.id = 'backButton'
-        backButton.textContent = "⮜ [ EDIT MODE ]";
-        goButton.parentNode.replaceChild(backButton, goButton); 
-
-        // Handle back button click
-        backButton.addEventListener('click', function () {
-
-            // Reset EVERYTHING
-            if (currentAbortController) {
-                currentAbortController.abort();
-                console.log('Cancelled in-flight API request');
-            }
-            conversationHistory = [{
-                role: 'system',
-                content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
-            }];
-            detectedAlgorithm = null;
-            extractedArray = null;
-            lastSelectedText = "";
-            parsing = false;
-            highlightArea.parentNode.replaceChild(textarea, highlightArea);
-            backButton.parentNode.replaceChild(goButton, backButton);
-
-            // Give parsing state to iframe
-            if (iframe?.contentWindow) {
-                iframe.contentWindow.postMessage({ parsingState: parsing }, '*');
-                console.log("Passed state parsingState: " + parsing);
-            } 
-        });
-
-        // Add code context to conversation, but trim files that are too large (save tokens!!)
-        if (inputText.length > MAX_FILE_SIZE) {
-            const halfSize = MAX_FILE_SIZE / 2;
-            fileContext = 
-                inputText.substring(0, halfSize) 
-                + '\n\n... [middle section truncated] ...\n\n' // Take first few and last few chars to preserve structure
-                + inputText.substring(inputText.length - halfSize);
-            console.log(`Large file trimmed: ${inputText.length} → ${fileContext.length} chars`);
-        } else {
-            fileContext = inputText;
-        }
-        conversationHistory.push({
-            role: 'system',
-            content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
-        });
     });
 }
 
@@ -150,19 +499,24 @@ function checkHighlightedText() {
 // ======================== CALLING AI FUNCTIONS =================================
 // Function to trim conversation history w sliding window to keep history manageable
 function trimConversationHistory() {
-    const MAX_HISTORY_ITEMS = 10; // Keep last 10 messages (5 exchanges)
+    const MAX_HISTORY_ITEMS = 10; 
     
     if (conversationHistory.length > MAX_HISTORY_ITEMS) {
-        const systemMessages = conversationHistory.slice(0, 3); // System + file context
+        const systemMessages = conversationHistory.slice(0, 3); 
         const recentMessages = conversationHistory.slice(-MAX_HISTORY_ITEMS + 3);
-        conversationHistory = [...systemMessages, ...recentMessages];
-        
         console.log("Trimmed conversation history to", conversationHistory.length, "messages");
+        return [...systemMessages, ...recentMessages];
     } 
+    return conversationHistory;
+
 }
 
 // Function to callAI, params: (page function prompt, keep history yes/no)
 async function callAI(systemPrompt, persistHistory = true) {
+    const activeTab = getActiveTab();
+    const conversationHistory = activeTab.conversationHistory;
+    const fileContext = activeTab.fileContext;
+
     const messagesToSend = persistHistory 
         ? [...conversationHistory, 
             { role: 'system', content: systemPrompt },
@@ -189,13 +543,12 @@ async function callAI(systemPrompt, persistHistory = true) {
         });
 
         const completion = await response.json();
-        console.log('Full API response:', completion);
         const airesponse = completion.choices[0].message.content.trim();
 
         // If user did not submit code, don't append AI response to history
         if (persistHistory && airesponse != '# MISSING CODE') { 
-            conversationHistory.push({role: 'assistant', content: airesponse});
-            trimConversationHistory(); 
+            activeTab.conversationHistory.push({role: 'assistant', content: airesponse});
+            activeTab.conversationHistory = trimConversationHistory(activeTab.conversationHistory);
         }
 
         return airesponse;
@@ -345,7 +698,8 @@ async function handleComplexityPage() {
 
 // ======================== ENTER KEY HANDLER =================================
 document.addEventListener('keydown', async function (event) {
-    if (event.key !== 'Enter' || !parsing) return;
+    const activeTab = getActiveTab();
+    if (event.key !== 'Enter' || !activeTab?.parsing) return;
 
     checkHighlightedText();
 
@@ -373,10 +727,10 @@ document.addEventListener('keydown', async function (event) {
             default:
                 console.error("Unknown page:", window.currentPage);
         }
-        console.log("Conversation Length: " + conversationHistory.length);
+        console.log("Conversation Length: " + activeTab.conversationHistory.length);
     } finally {
         setTimeout(() => {
-            enterCooldown = false; // Debounce time of 1.5s for enterCooldown flag to reset
+            enterCooldown = false; // Debounce time of 1.5s until enterCooldown flag reset
     }, 1500);
 }
 });
@@ -391,12 +745,32 @@ if (grabBar && textarea) {
     document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
         e.preventDefault();
-        const newHeight = e.clientY - textarea.getBoundingClientRect().top;
-        textarea.style.height = Math.max(100, newHeight) + "px";
+
+        const textareaEl = document.getElementById('codeInput');
+        if (!textareaEl) return;
+        const newHeight = e.clientY - textareaEl.getBoundingClientRect().top;
+        textareaEl.style.height = Math.max(100, newHeight) + "px";
     });
 
     document.addEventListener("mouseup", () => {
         isDragging = false;
         document.body.style.cursor = "default";
     });
+}
+
+// =========================== INITIALIZATION ===================================
+function initializeApp() {
+    renderTabs();
+    const activeTab = getActiveTab();
+
+    // Load welcome tab content
+    if (activeTab && textarea) {
+        textarea.value = activeTab.content;
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
 }

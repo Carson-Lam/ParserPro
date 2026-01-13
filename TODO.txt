@@ -2,4 +2,3 @@ states, improve animations (DONE)
 Debounce, prevent repeats (DONE)
 
 tabs, opening
-MISSING CODE doesn't contribute to array, debounce
