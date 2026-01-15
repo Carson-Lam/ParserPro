@@ -178,7 +178,7 @@ const TabOperations = {
                 codeEl.innerHTML = Prism.highlight(tab.content, Prism.languages.javascript, 'javascript');
             }
             if (toggleButton) {
-                toggleButton.textContent = '⮜ [ EDIT MODE ]';
+                toggleButton.textContent = '⮜';
                 toggleButton.dataset.mode = 'edit';
             }
         // New tab was in editing state
@@ -195,7 +195,7 @@ const TabOperations = {
                 codeEl.value = tab.content;
             }
             if (toggleButton) {
-                toggleButton.textContent = '⮞ [ PARSE MODE ]';
+                toggleButton.textContent = '⮞';
                 toggleButton.dataset.mode = 'parse';
             }
         }

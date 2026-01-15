@@ -31,8 +31,7 @@
 :root {
     --vscode-bg: #1f1f1f;
     --vscode-darker-bg: #252526;
-    --vscode-darkest: #181818;
-    --vscode-sidebar: #333333;
+    --vscode-tabbar-bg: #181818;
     --vscode-text: #d4d4d4;
     --vscode-highlight: #2c2c2c;
     --vscode-blue: #007acc;
@@ -88,7 +87,6 @@ hr {
     justify-content: flex-end;
     align-items: center;
     background-color: #181818;
-    border-bottom: 1px solid var(--vscode-highlight);
 }
 
 .tab-bar {
@@ -103,6 +101,7 @@ hr {
     position: relative;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
+    /* background-color: red; */
 }
 
 .tab-bar::-webkit-scrollbar {
@@ -126,15 +125,16 @@ hr {
     display: flex;
     align-items: center;
     gap: 8px;
-    background-color: var(--vscode-bg);
+    background-color: var(--vscode-tabbar-bg);
     border-top: 1.5px solid transparent;
     border-bottom: none;
-    border-left: 1px solid var(--vscode-darker-bg);
-    border-right: 1px solid var(--vscode-darker-bg);
+    border-left: 0.5px solid var(--vscode-darker-bg);
+    border-right: 0.5px solid var(--vscode-darker-bg);
     color: white;
     font-size: 15px;
     font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
-    padding: 5px 13px;
+    padding: 0px 13px;
+    height: 43px;
     cursor: pointer;
     transition: background-color 0.2s ease, border-top-color 0.2s ease;
     white-space: nowrap;
@@ -190,23 +190,23 @@ hr {
 }
 
 .new-tab-button {
-    background-color: var(--vscode-bg);
-    border-top: 1.5px solid transparent;
-    border-bottom: none;
-    border-left: 1px solid var(--vscode-darker-bg);
-    border-right: 1px solid var(--vscode-darker-bg);
-    color: white;
-    font-size: 18px;
+    background-color: transparent;
+    border: none;
+    border-radius: 3px;
     font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
-    padding: 5px 13px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ccc;
+    padding: 0px 8px;
+    margin-left: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
     cursor: pointer;
-    transition: background-color 0.2s ease, border-top-color 0.2s ease;
     flex-shrink: 0;
 }
 
 .new-tab-button:hover {
-    background-color: var(--vscode-border);
-    border-top-color: var(--vscode-blue);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 /* ==================== CONTENT AREA ==================== */
