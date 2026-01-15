@@ -1,3 +1,6 @@
+/*
+- Handler script for explanation page states & formatting given AI output
+*/
 // =========================== GLOBAL STATE ===================================
 window.onload = function() {
     // Send pgnum to parent window

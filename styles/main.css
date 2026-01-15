@@ -331,7 +331,6 @@ hr {
     padding: 25px;
     background-color: var(--vscode-darker-bg);
     border: 1.5px solid var(--vscode-blue);
-    border-radius: 15px;
     border-left: none;
     border-right: none;
     border-bottom: none;

@@ -1,575 +1,381 @@
-// =========================== TAB STATE ===================================
-let tabs = [
-    {
-        id: 'tab_0',
-        name: 'Welcome.txt',
-        content: `// WELCOME TO PARSERPRO!`,
-        parsing: false,
-        conversationHistory: [{
-            role: 'system',
-            content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
-        }],
-        fileContext: ''
-    }
-];
+// =========================== CONSTANTS ===================================
 
-let activeTabId = 'tab_0';
-let tabIdCounter = 1;
-let draggedTabId = null;
-let dragOverTabId = null;
+const CONFIG = {
+    MAX_FILE_SIZE: 1000,
+    MAX_HISTORY_ITEMS: 10,
+    DEBOUNCE_DELAY: 1500,
+    API_ENDPOINT: 'https://parserpro.onrender.com/parse',
+    MODEL: 'llama-3.3-70b-versatile'
+};
 
-// =========================== GLOBAL STATE ===================================
+const PAGE_TYPES = {
+    EXPLANATION: 1,
+    VISUALIZATION: 2,
+    COMPLEXITY: 3
+};
 
-// Manipulable variables
-let selectedText = "";
-let lastSelectedText = "";
-let enterCooldown = false; // Submission debounce
-let currentPage = 1;
-let currentAbortController = null; // For cancelling API reqs on pg swap, back button
-window.currentPage = currentPage;
+const SYSTEM_PROMPT = 'You are an expert software engineer with decades of experience in understanding and explaining code.';
 
-// Visualization state
-let detectedAlgorithm = null;
-let extractedArray = null;
+const WELCOME_CONTENT = `// WELCOME TO PARSERPRO
+// To get started, see *Info* on the top right of your screen!
 
-// DOM element references
-const infoButton = document.getElementById("infoButton");
-const infoPopup = document.getElementById("infoPopup");
-const textarea = document.getElementById("codeInput");
-const grabBar = document.getElementById("grabBar");
-const iframe = document.getElementById('frameExplanation');
-const MAX_FILE_SIZE = 1000; // ~ 125 tokens
-let isDragging = false;
-
-
-// =========================== TAB INITIALIZATION ===================================
-function getActiveTab() {
-    return tabs.find(tab => tab.id === activeTabId);
+public static void welcomePage() {
+    loadInterface();
+    GreetUser(yourName);
 }
+`
 
-function getTabById(id) {
-    return tabs.find(tab => tab.id === id);
-}
+// =========================== STATE ===================================
 
-function getTabIndexById(id) {
-    return tabs.findIndex(tab => tab.id === id);
-}
-
-// Create tab: -define properties, -reset conversationHistory, -push to tabs array
-function createNewTab(name = null, content = '') {
-    const newName = name || `Untitled-${tabIdCounter}.txt`;
-    const newTab = {
-        id: `tab_${tabIdCounter}`,
-        name: newName,
-        content: content,
-        parsing: false,
-        conversationHistory: [{
-            role: 'system',
-            content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
-        }],
-        fileContext: content
-    };
-
-    tabs.push(newTab);
-    tabIdCounter++;
-    
-    console.log(`Created new tab: ${newName}`);
-    return newTab.id;
-}
-
-// Switch tabs: -save current tab content, -load new tab content, -update new tab UI, -pass new tab state 
-function switchTab(newTabId) {
-    if (newTabId === activeTabId) return;
-    
-    const oldTab = getActiveTab();
-    const newTab = getTabById(newTabId);
-    
-    if (!newTab) {
-        console.error(`Tab ${newTabId} not found`);
-        return;
-    }
-    
-    saveCurrentTabState();
-    
-    activeTabId = newTabId;
-    console.log(`Switched to tab: ${newTab.name}`);
-    
-    loadTabState(newTab);
-    renderTabs();
-    
-    if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ parsingState: newTab.parsing }, '*');
-    }
-}
-
-// Close tabs: -Don't close if only 1, -Swap to rightmost tab in index (Math.max) if current closed
-function closeTab(tabId) {
-    if (tabs.length === 1) {
-        console.log('Cannot close last tab');
-        return;
-    }
-    
-    const tabIndex = getTabIndexById(tabId);
-    if (tabIndex === -1) return;
-    
-    const closingActiveTab = (tabId === activeTabId);
-    
-    tabs.splice(tabIndex, 1);
-    console.log(`Closed tab: ${tabId}`);
-    
-    if (closingActiveTab) {
-        const newActiveIndex = Math.max(0, tabIndex - 1);
-        switchTab(tabs[newActiveIndex].id);
-    } else {
-        renderTabs();
-    }
-}
-
-// Reorder tabs
-function reorderTab(fromIndex, toIndex) {
-    if (fromIndex === toIndex) return;
-    
-    const [movedTab] = tabs.splice(fromIndex, 1);
-    tabs.splice(toIndex, 0, movedTab);
-    
-    console.log(`Reordered tab from ${fromIndex} to ${toIndex}`);
-    renderTabs();
-}
-
-// Save tab: -Save highlight area data in activeTab properties (whether parsing or editing stage)
-function saveCurrentTabState() {
-    const activeTab = getActiveTab();
-    if (!activeTab) return;
-    
-    const textarea = document.getElementById('codeInput');
-    const highlightArea = document.getElementById('highlightArea');
-    
-    if (textarea) {
-        activeTab.content = textarea.value;
-    } else if (highlightArea) {
-        activeTab.content = highlightArea.textContent;
-    }
-}
-
-// Load tab state: Replace tab area data with stored tab.content content (both parsing, edit stages)
-function loadTabState(tab) {
-    const textarea = document.getElementById('codeInput');
-    const highlightArea = document.getElementById('highlightArea');
-    const toggleButton = document.getElementById('toggleParseButton');
-
-    if (tab.parsing) {
-        if (textarea) {
-            const newHighlightArea = document.createElement('pre');
-            newHighlightArea.classList.add('highlightArea');
-            newHighlightArea.id = 'highlightArea';
-            newHighlightArea.innerHTML = Prism.highlight(
-                tab.content, 
-                Prism.languages.javascript, 
-                'javascript'
-            );
-            textarea.parentNode.replaceChild(newHighlightArea, textarea);
-        } else if (highlightArea) {
-            highlightArea.innerHTML = Prism.highlight(
-                tab.content, 
-                Prism.languages.javascript, 
-                'javascript'
-            );
+const State = {
+    tabs: [
+        {
+            id: 'tab_0',
+            name: 'Welcome.txt',
+            content: WELCOME_CONTENT,
+            parsing: false,
+            conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
+            fileContext: ''
         }
-        if (toggleButton) {
-            toggleButton.textContent = "⮜ [ EDIT MODE ]";
-            toggleButton.dataset.mode = 'edit';
-        }
-    } else {
-        // Switch to edit mode
-        if (highlightArea) {
-            const newTextarea = document.createElement('textarea');
-            newTextarea.id = 'codeInput';
-            newTextarea.name = 'codeInput';
-            newTextarea.required = true;
-            newTextarea.placeholder = 'Enter your code here...';
-            newTextarea.value = tab.content;
-            highlightArea.parentNode.replaceChild(newTextarea, highlightArea);
-        } else if (textarea) {
-            textarea.value = tab.content;
+    ],
+    activeTabId: 'tab_0',
+    tabIdCounter: 1,
+    draggedTabId: null,
+    dragOverTabId: null,
+    selectedText: '',
+    lastSelectedText: '',
+    enterCooldown: false,
+    currentPage: PAGE_TYPES.EXPLANATION,
+    currentAbortController: null
+};
+
+window.currentPage = State.currentPage;
+
+// =========================== UTILITIES ===================================
+
+const Logger = {
+    info: (message, ...args) => console.log(`[ParserPro] ${message}`, ...args),
+    warn: (message, ...args) => console.warn(`[ParserPro] ${message}`, ...args),
+    error: (message, ...args) => console.error(`[ParserPro] ${message}`, ...args)
+};
+
+const DOM = {
+    get: (id) => document.getElementById(id),
+    getCodeElement: () => DOM.get('codeInput') || DOM.get('highlightArea'),
+    iframe: () => DOM.get('frameExplanation')
+};
+
+const TabUtils = {
+    getActive: () => State.tabs.find(tab => tab.id === State.activeTabId),
+    getById: (id) => State.tabs.find(tab => tab.id === id),
+    getIndexById: (id) => State.tabs.findIndex(tab => tab.id === id),
+    exists: (id) => State.tabs.some(tab => tab.id === id)
+};
+
+// =========================== TAB OPERATIONS ===================================
+
+const TabOperations = {
+    // Create tab: -define properties, -reset conversationHistory, -push to tabs array
+    create(name = null, content = '') {
+        const newName = name || `Untitled-${State.tabIdCounter}.txt`;
+        const newTab = {
+            id: `tab_${State.tabIdCounter}`,
+            name: newName,
+            content: content,
+            parsing: false,
+            conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
+            fileContext: content
+        };
+        
+        State.tabs.push(newTab);
+        State.tabIdCounter++;
+        
+        Logger.info(`Created tab: ${newName}`);
+        return newTab.id;
+    },
+
+    // Switch tabs: -save current tab content, -load new tab content, -add new tab to bar, -pass new tab state to iframe
+    switch(newTabId) {
+        if (newTabId === State.activeTabId) return;
+        
+        const newTab = TabUtils.getById(newTabId);
+        if (!newTab) {
+            Logger.error(`Tab ${newTabId} not found`);
+            return;
         }
         
-        if (toggleButton) {
-            toggleButton.textContent = "⮞ [ PARSE MODE ]";
-            toggleButton.dataset.mode = 'parse';
-        }
-    }
-}
+        this.saveState();
+        State.activeTabId = newTabId;
+        this.loadState(newTab);
+        UI.renderTabs();
+        
+        // Update iframe to match new tab's parsing state
+        UI.sendToIframe({ parsingState: newTab.parsing });
+    },
 
-// Render tabs: Render tab button, active styling, (conditional) close button, using appendChild
-function renderTabs(){
-    const tabContainer = document.getElementById('tabContainer');
-    if (!tabContainer) return; // Prevents getting container before DOM loads
-    tabContainer.innerHTML = '';
-    
-    tabs.forEach((tab, index) => {
-        const tabButton = document.createElement('button');
-        tabButton.className = 'tab-button';
-        tabButton.dataset.tabId = tab.id;
-        tabButton.draggable = true;
-        
-        if (tab.id === activeTabId) {
-            tabButton.classList.add('active');
+    // Close tabs: -Don't close if only 1, -Swap to rightmost tab in index (Math.max) if current closed
+    close(tabId) {
+        if (State.tabs.length === 1) {
+            Logger.warn('Cannot close the last remaining tab');
+            return;
         }
         
-        const fileIcon = document.createElement('img');
-        fileIcon.src = '../images/file.png';
-        fileIcon.className = 'file-icon';
-        tabButton.appendChild(fileIcon);
+        const tabIndex = TabUtils.getIndexById(tabId);
+        if (tabIndex === -1) return;
         
-        const tabName = document.createElement('span');
-        tabName.className = 'tab-name';
-        tabName.textContent = tab.name;
-        tabButton.appendChild(tabName);
+        const closingActiveTab = (tabId === State.activeTabId);
+        State.tabs.splice(tabIndex, 1);
         
-        if (tabs.length > 1) {
-            const closeBtn = document.createElement('span');
-            closeBtn.className = 'tab-close';
-            closeBtn.textContent = '✕';
-            tabButton.appendChild(closeBtn);
+        if (closingActiveTab) {
+            const newActiveIndex = Math.max(0, tabIndex - 1);
+            this.switch(State.tabs[newActiveIndex].id);
+        } else {
+            UI.renderTabs();
         }
+    },
+    
+    // Reorder tabs
+    reorder(fromIndex, toIndex) {
+        if (fromIndex === toIndex) return;
         
-        tabContainer.appendChild(tabButton);
-    });
-    
-    // Add new tab button
-    const newTabBtn = document.createElement('button');
-    newTabBtn.className = 'new-tab-button';
-    newTabBtn.textContent = '+';
-    newTabBtn.title = 'New tab';
-    tabContainer.appendChild(newTabBtn);
-    
-    // Update scroll fade effect
-    updateScrollFade();
-}
+        const [movedTab] = State.tabs.splice(fromIndex, 1);
+        State.tabs.splice(toIndex, 0, movedTab);
+        UI.renderTabs();
+    },
 
-function updateScrollFade() {
-    const tabContainer = document.getElementById('tabContainer');
-    if (!tabContainer) return;
-    
-    const isOverflowing = tabContainer.scrollWidth > tabContainer.clientWidth;
-    const isScrolledToEnd = tabContainer.scrollLeft + tabContainer.clientWidth >= tabContainer.scrollWidth - 5;
-    
-    if (isOverflowing && !isScrolledToEnd) {
-        tabContainer.classList.add('has-overflow');
-    } else {
-        tabContainer.classList.remove('has-overflow');
-    }
-}
+    // Save tab state: -Save highlight area data (regardless of DOM = parsing/editing) in activeTab's .content property 
+    saveState() {
+        const activeTab = TabUtils.getActive();
+        if (!activeTab) return;
+        
+        const codeEl = DOM.getCodeElement();
+        if (!codeEl) return;
+        
+        activeTab.content = codeEl.value || codeEl.textContent || '';
+    },
 
-// =========================== TAB EVENTS ===================================
-document.addEventListener('DOMContentLoaded', function() {
-    const tabContainer = document.getElementById('tabContainer');
-    if (!tabContainer) return; // Prevents getting container before DOM loads
-
-    // Handle Tab clicks events
-    tabContainer.addEventListener('click', function(e) {
-        const tabButton = e.target.closest('.tab-button');
-        const closeButton = e.target.closest('.tab-close');
-        const newTabButton = e.target.closest('.new-tab-button');
+    // Load tab state: Replace tab area data with the new tab's stored tab.content content. replace button
+    loadState(tab) {
+        const codeEl = DOM.getCodeElement();
+        const toggleButton = DOM.get('toggleParseButton');
         
-        if (closeButton && tabButton) {
-            e.stopPropagation();
-            const tabId = tabButton.dataset.tabId;
-            closeTab(tabId);
-        } else if (tabButton) {
-            const tabId = tabButton.dataset.tabId;
-            switchTab(tabId);
-        } else if (newTabButton) {
-            const newId = createNewTab();
-            switchTab(newId);
-        }
-    });
-    
-    // Handle tab Drag and drop events
-    tabContainer.addEventListener('dragstart', function(e) {
-        const tabButton = e.target.closest('.tab-button');
-        if (!tabButton) return;
-        
-        draggedTabId = tabButton.dataset.tabId;
-        tabButton.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-    });
-    
-    tabContainer.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        const tabButton = e.target.closest('.tab-button');
-        if (!tabButton || !draggedTabId) return;
-        
-        dragOverTabId = tabButton.dataset.tabId;
-        
-        // Remove all drag-over classes
-        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('drag-over');
-        });
-        
-        // Add drag-over class to current target
-        if (draggedTabId !== dragOverTabId) {
-            tabButton.classList.add('drag-over');
-        }
-    });
-    
-    tabContainer.addEventListener('dragleave', function(e) {
-        const tabButton = e.target.closest('.tab-button');
-        if (tabButton) {
-            tabButton.classList.remove('drag-over');
-        }
-    });
-    
-    tabContainer.addEventListener('drop', function(e) {
-        e.preventDefault();
-        const tabButton = e.target.closest('.tab-button');
-        
-        if (!tabButton || !draggedTabId || !dragOverTabId) return;
-        if (draggedTabId === dragOverTabId) return;
-        
-        const fromIndex = getTabIndexById(draggedTabId);
-        const toIndex = getTabIndexById(dragOverTabId);
-        
-        reorderTab(fromIndex, toIndex);
-        
-        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('drag-over', 'dragging');
-        });
-        
-        draggedTabId = null;
-        dragOverTabId = null;
-    });
-    
-    tabContainer.addEventListener('dragend', function(e) {
-        const tabButton = e.target.closest('.tab-button');
-        if (tabButton) {
-            tabButton.classList.remove('dragging');
+        if (!codeEl) {
+            Logger.error('Code element not found');
+            return;
         }
         
-        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('drag-over');
-        });
-        
-        draggedTabId = null;
-        dragOverTabId = null;
-    });
-    
-    // Fade effect
-    tabContainer.addEventListener('scroll', updateScrollFade);
-    window.addEventListener('resize', updateScrollFade);
-});
-
-// ======================= TOGGLE PARSE/EDIT BUTTON ===============================
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleButton = document.getElementById('toggleParseButton');
-    if (!toggleButton) return;
-    
-    toggleButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const activeTab = getActiveTab();
-        const currentMode = toggleButton.dataset.mode || 'parse';
-        
-        // Parsing mode enter: Replace text area, feed trimmed input to AI for context, give state to iframe
-        if (currentMode === 'parse') {
-            saveCurrentTabState();
-            activeTab.parsing = true;
-            
-            //Create syntax-highlighted code view using PRISM.js
-            const textarea = document.getElementById('codeInput');
-            if (textarea) {
+        // New tab was in parsing state
+        if (tab.parsing) { 
+            // Replace current editing window with new tab's parsing window text & highlight
+            if (codeEl.id === 'codeInput') { 
                 const highlightArea = document.createElement('pre');
                 highlightArea.classList.add('highlightArea');
                 highlightArea.id = 'highlightArea';
-                highlightArea.innerHTML = Prism.highlight(
-                    activeTab.content, 
-                    Prism.languages.javascript, 
-                    'javascript'
-                );
-                textarea.parentNode.replaceChild(highlightArea, textarea);
+                highlightArea.innerHTML = Prism.highlight(tab.content, Prism.languages.javascript, 'javascript');
+                codeEl.parentNode.replaceChild(highlightArea, codeEl);
+            // Replace current parsing window text with new tab's parsing window text & rehighlight
+            } else { 
+                codeEl.innerHTML = Prism.highlight(tab.content, Prism.languages.javascript, 'javascript');
             }
-            
-            toggleButton.textContent = "⮜ [ EDIT MODE ]";
-            toggleButton.dataset.mode = 'edit';
-            
-            // Trim input if necessary (save tokens!!), feed to AI for context
-            const inputText = activeTab.content;
-            let fileContext;
-            if (inputText.length > MAX_FILE_SIZE) {
-                const halfSize = MAX_FILE_SIZE / 2;
-                fileContext = 
-                    inputText.substring(0, halfSize) 
-                    + '\n\n... [middle section truncated] ...\n\n'  // Take first few and last few chars to preserve structure
-                    + inputText.substring(inputText.length - halfSize);
-            } else {
-                fileContext = inputText;
+            if (toggleButton) {
+                toggleButton.textContent = '⮜ [ EDIT MODE ]';
+                toggleButton.dataset.mode = 'edit';
             }
-            activeTab.fileContext = fileContext;
-            activeTab.conversationHistory.push({
-                role: 'system',
-                content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
-            });
-
-            // Give parsing state to iframe
-            if (iframe?.contentWindow) {
-                iframe.contentWindow.postMessage({ parsingState: true }, '*');
-            }
-        // Editing mode enter: Replace text area, feed trimmed input to AI for context, give state to iframe
+        // New tab was in editing state
         } else {
-            if (currentAbortController) {
-                currentAbortController.abort();
-            }
-            
-            // Reset all states (array, visualization vars, conversation history)
-            activeTab.conversationHistory = [{
-                role: 'system',
-                content: 'You are an expert software engineer with decades of experience in understanding and explaining code.'
-            }];
-            activeTab.parsing = false;
-            lastSelectedText = "";
-            detectedAlgorithm = null;
-            extractedArray = null;
-            
-            // Create editing view
-            const highlightArea = document.getElementById('highlightArea');
-            if (highlightArea) {
+            if (codeEl.id === 'highlightArea') {
                 const textarea = document.createElement('textarea');
                 textarea.id = 'codeInput';
                 textarea.name = 'codeInput';
                 textarea.required = true;
                 textarea.placeholder = 'Enter your code here...';
-                textarea.value = activeTab.content;
-                highlightArea.parentNode.replaceChild(textarea, highlightArea);
+                textarea.value = tab.content;
+                codeEl.parentNode.replaceChild(textarea, codeEl);
+            } else {
+                codeEl.value = tab.content;
             }
-            
-            toggleButton.textContent = "⮞ [ PARSE MODE ]";
-            toggleButton.dataset.mode = 'parse';
-            
-            // Give parsing state to iframe
-            if (iframe?.contentWindow) {
-                iframe.contentWindow.postMessage({ parsingState: false }, '*');
+            if (toggleButton) {
+                toggleButton.textContent = '⮞ [ PARSE MODE ]';
+                toggleButton.dataset.mode = 'parse';
             }
         }
-    });
-});
+    },
+};
 
-// =========================== PAGE DETECTION ===================================
-// Take pgnum from iframe, stop API calls, give parsing state to iframe
-window.addEventListener('message', function (event) { 
+// =========================== UI RENDERING ===================================
 
-    if (event.data?.pageNumber !== undefined) {
-        window.currentPage = event.data.pageNumber;
-        console.log("Page swapped to: " + window.currentPage);
-
-
-        if (currentAbortController) {
-            currentAbortController.abort();
-        }
-         
-        const activeTab = getActiveTab();
-        if (iframe?.contentWindow && activeTab) {
-            iframe.contentWindow.postMessage({ parsingState: activeTab.parsing }, '*');
-        }
-        console.log("Passed state parsingState: " + activeTab.parsing);
-
-    }
-});
-
-// =========================== INFO POPUP ===================================
-if (infoButton && infoPopup) {
-    infoButton.addEventListener("click", function () {
-        const isVisible = (infoPopup.style.display === "block");
-        infoPopup.style.display = isVisible ? "none" : "block";
-        infoButton.innerHTML = isVisible ? " 🛈 Info " : " ✖ Close ";
-    });
-}
-
-// =========================== TEXT SELECTION =================================
-// Handle highlighted text, ensuring that highlighted text is within code box
-function checkHighlightedText() {
-    const newSelectedText = window.getSelection().toString();
-    const highlightArea = document.getElementById('highlightArea');
-
-    // Check if highlighted text is in the highlight area and if anything is highlighted
-    if (newSelectedText && highlightArea?.textContent.includes(newSelectedText)) {
-        selectedText = newSelectedText;
-    }
-}
-
-// ======================== CALLING AI FUNCTIONS =================================
-// Function to trim conversation history w sliding window to keep history manageable
-function trimConversationHistory() {
-    const MAX_HISTORY_ITEMS = 10; 
-    
-    if (conversationHistory.length > MAX_HISTORY_ITEMS) {
-        const systemMessages = conversationHistory.slice(0, 3); 
-        const recentMessages = conversationHistory.slice(-MAX_HISTORY_ITEMS + 3);
-        console.log("Trimmed conversation history to", conversationHistory.length, "messages");
-        return [...systemMessages, ...recentMessages];
-    } 
-    return conversationHistory;
-
-}
-
-// Function to callAI, params: (page function prompt, keep history yes/no)
-async function callAI(systemPrompt, persistHistory = true) {
-    const activeTab = getActiveTab();
-    const conversationHistory = activeTab.conversationHistory;
-    const fileContext = activeTab.fileContext;
-
-    const messagesToSend = persistHistory 
-        ? [...conversationHistory, 
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: selectedText }]
-        : [ // If history is not kept, don't use conversationHistory array
-            { role: 'system', content: 'You are an expert software engineer with decades of experience in understanding and explaining code.' },
-            { role: 'system', content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}` },
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: selectedText }
-        ];
-    try {
-        currentAbortController = new AbortController();
-
-        // Fetch block 
-        // Fetch syntax: {method, headers, body(key1, key2)}
-        const response = await fetch(`https://parserpro.onrender.com/parse`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                messages: messagesToSend,
-                model: 'llama-3.3-70b-versatile' 
-            }),
-            signal: currentAbortController.signal
+const UI = {
+    // Render tabs: Render tab button, add to container, Render new tab (+) button, add to container, update fade
+    renderTabs() {
+        const tabContainer = DOM.get('tabContainer');
+        if (!tabContainer) return; // Fix 15/1/26: prevents getting container before DOM loads
+        
+        tabContainer.innerHTML = ''; // Reset tab container
+        
+        State.tabs.forEach(tab => {
+            const tabButton = this._createTabButton(tab);
+            tabContainer.appendChild(tabButton);
         });
+        
+        const newTabBtn = this._createNewTabButton();
+        tabContainer.appendChild(newTabBtn);
+        
+        this.updateScrollFade();
+    },
 
-        const completion = await response.json();
-        const airesponse = completion.choices[0].message.content.trim();
-
-        // If user did not submit code, don't append AI response to history
-        if (persistHistory && airesponse != '# MISSING CODE') { 
-            activeTab.conversationHistory.push({role: 'assistant', content: airesponse});
-            activeTab.conversationHistory = trimConversationHistory(activeTab.conversationHistory);
+    // Create tab button
+    _createTabButton(tab) {
+        const button = document.createElement('button');
+        button.className = 'tab-button';
+        button.dataset.tabId = tab.id;
+        button.draggable = true;
+        button.setAttribute('role', 'tab');
+        button.setAttribute('aria-selected', tab.id === State.activeTabId);
+        
+        // Check if active, set styling 
+        if (tab.id === State.activeTabId) {
+            button.classList.add('active');
         }
-
-        return airesponse;
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('API request cancelled');
-            return null;
+        
+        // Set tab icon
+        const fileIcon = document.createElement('img');
+        fileIcon.src = '../images/file.png';
+        fileIcon.className = 'file-icon';
+        fileIcon.alt = '';
+        fileIcon.setAttribute('aria-hidden', 'true');
+        button.appendChild(fileIcon);
+        
+        // Set tab name
+        const tabName = document.createElement('span');
+        tabName.className = 'tab-name';
+        tabName.textContent = tab.name;
+        button.appendChild(tabName);
+        
+        // (CONDITIONAL) close button if >1 tabs
+        if (State.tabs.length > 1) {
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'tab-close';
+            closeBtn.textContent = '✕';
+            closeBtn.setAttribute('aria-label', `Close ${tab.name}`);
+            closeBtn.setAttribute('role', 'button');
+            closeBtn.setAttribute('tabindex', '0');
+            button.appendChild(closeBtn);
         }
-        console.error('AI API Error: ', error.message);
-        return null;
-    } finally {
-        currentAbortController = null;
+        
+        return button;
+    },
+    // Create new tab button
+    _createNewTabButton() {
+        const button = document.createElement('button');
+        button.className = 'new-tab-button';
+        button.textContent = '+';
+        button.title = 'New tab';
+        button.setAttribute('aria-label', 'Create new tab');
+        return button;
+    },
+    // Add scroll fade, compare scrollWidth and clientWidth
+    updateScrollFade() {
+        const tabContainer = DOM.get('tabContainer');
+        if (!tabContainer) return;
+        
+        const isOverflowing = tabContainer.scrollWidth > tabContainer.clientWidth;
+        const isScrolledToEnd = tabContainer.scrollLeft + tabContainer.clientWidth >= tabContainer.scrollWidth - 5;
+        
+        tabContainer.classList.toggle('has-overflow', isOverflowing && !isScrolledToEnd);
+    },
+    // Send a message with postMessage to the iframe
+    sendToIframe(message) {
+        const iframe = DOM.iframe();
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(message, '*');
+        }
     }
-}
+};
 
-// ======================== PAGE SPECIFIC HANDLERS =================================
-// CASE 1: Explanation Page - Generate code explanation
-async function handleExplanationPage() {
-    console.log("Generating explanation...");
-    const prompt = 
-        `Analyze the highlighted code and provide a concise, detailed explanation.
+// =========================== AI INTEGRATION ===================================
+
+const AI = {
+    // Function to trim conversation history w sliding window to keep history manageable
+    trimHistory(history) {
+        if (history.length <= CONFIG.MAX_HISTORY_ITEMS) {
+            return history;
+        }
+        
+        const systemMessages = history.slice(0, 3); // Take first three messages 
+        const recentMessages = history.slice(-CONFIG.MAX_HISTORY_ITEMS + 3); // Take last three 
+        return [...systemMessages, ...recentMessages];
+    },
+    // Function to call AI, params: (page function prompt, keep history yes/no)
+    async call(systemPrompt, persistHistory = true) {
+        const activeTab = TabUtils.getActive();
+        const { conversationHistory, fileContext } = activeTab;
+        
+        const messagesToSend = persistHistory 
+            ? [ ...conversationHistory, 
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: State.selectedText }]
+            : [ // If history is not kept, don't use conversationHistory array
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'system', content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}` },
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: State.selectedText }
+            ];
+            
+        try {
+            State.currentAbortController = new AbortController();
+
+            // Fetch block 
+            // Fetch syntax: {method, headers, body(key1, key2)}
+            // ===================================================
+            const response = await fetch(CONFIG.API_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: messagesToSend,
+                    model: CONFIG.MODEL
+                }),
+                signal: State.currentAbortController.signal
+            });
+            // ====================================================
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const completion = await response.json();
+            
+            if (!completion?.choices?.[0]?.message?.content) {
+                throw new Error('Invalid API response structure');
+            }
+            
+            const aiResponse = completion.choices[0].message.content.trim();
+            
+            // If user did not submit code/history not saved, don't append AI repsonse to history
+            if (persistHistory && aiResponse !== '# MISSING CODE') {
+                activeTab.conversationHistory.push({ role: 'assistant', content: aiResponse });
+                activeTab.conversationHistory = this.trimHistory(activeTab.conversationHistory);
+            }
+
+            return aiResponse;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                Logger.info('API request cancelled'); // Record AbortController errors
+                return null;
+            }
+            Logger.error('AI API Error:', error);
+            return null;
+        } finally {
+            State.currentAbortController = null;
+        }
+    }
+};
+
+// =========================== PAGE HANDLERS ===================================
+const PageHandlers = {
+
+    // CASE 1: Explanation Page - Generate code explanation
+    async explanation() {
+        const prompt = `Analyze the highlighted code and provide a concise, detailed explanation.
 
         You MUST follow this response structure:
 
@@ -584,191 +390,340 @@ async function handleExplanationPage() {
 
         Use markdown formatting. Be direct and technical - no conversational fluff.
         Add a space between each bullet point (-).
-        Consider the wider code as context which you recieved in a previous chat completion.
+        Consider the wider code as context which you received in a previous chat completion.
         If input is not code, respond with ONLY "# MISSING CODE" and nothing else.`;
 
-    if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ explanation: 'Generating response...' }, "*");
-    }
-
-    const explanation = await callAI(prompt, true);
-
-    if (explanation && iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ explanation: explanation}, "*");
-    }
-}
-
-// CASE 2: Visualization page - Detect sorting algorithm and extract array
-async function handleVisualizationPage() {
-    console.log("Detecting sorting algorithm...");
-
-    // Extract algorithm from code, return [one word identifier]
-    const algorithmPrompt = `Analyze the code and identify if it contains a sorting algorithm.
-    Respond with ONLY one word from this list: bubble, insertion, selection, quick, merge, counting, radix, heap, bucket
-    Only the word should be returned. If no sorting algorithm is found, respond with: default`;
-    if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ visualization: 'Detecting sorting algorithm...' }, "*");
-    }
-    let algorithm = await callAI(algorithmPrompt, false);
-    algorithm = algorithm?.toLowerCase().trim()  || 'default'; //In case AI gives inconsistent case
-    console.log(algorithm);
-
-    // ERROR: Pass error state to frame
-    if (!algorithm || algorithm === 'default') {
-        if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage({ 
-                visualization: 'No sorting algorithm detected in the highlighted code.' 
-            }, '*');
+        UI.sendToIframe({ explanation: 'Generating response...' });
+        const explanation = await AI.call(prompt, true);
+        if (explanation) {
+            UI.sendToIframe({ explanation });
         }
-        return;
-    }
-
-    // Extract array from code, return [array as list]
-    const arrayPrompt = `Analyze the code and identify if it contains an array
-    or any kind of list of values, intended to be sorted.  
-    - If so, extract the array literal from the code.
-    - If not, generate a dummy array with 5-10 random integers between 1-50.
-    Respond with ONLY the array values, comma seperated, no brackets or extra text.`;
-
-    const arrayData = await callAI(arrayPrompt, false);
-    console.log(arrayData);
-
-    // SUCCESS: Pass successful output state to frame
-    if (arrayData) {
+    },
+    
+    // CASE 2: Visualization page - Detect sorting algorithm and extract array
+    async visualization() {
+        UI.sendToIframe({ visualization: 'Detecting sorting algorithm...' });
         
-        detectedAlgorithm = algorithm;
-        extractedArray = arrayData;
+        // Extract algorithm from code, return [one word identifier]
+        const algorithmPrompt = `Analyze the code and identify if it contains a sorting algorithm.
+        Respond with ONLY one word from this list: bubble, insertion, selection, quick, merge, counting, radix, heap, bucket
+        Only the word should be returned. If no sorting algorithm is found, respond with: default`;
         
-        iframe.contentWindow.postMessage({ 
-            visualization: {
-                algorithm: algorithm, 
-                arrayData: arrayData
-            }
-        }, '*');
-    }
-}
+        let algorithm = await AI.call(algorithmPrompt, false);
+        algorithm = algorithm?.toLowerCase().trim() || 'default'; //In case AI gives inconsistent case-
 
-// CASE 3: Performance page - Analyze time, space, and provide improvements
-async function handleComplexityPage() {
-    console.log("Analyzing time complexity...");
-
-    // Analyze code, return [complexity values]
-    const complexityPrompt = `Analyze the complexity of the highlighted code.
-
-    You MUST follow this response structure:
-    # Time Complexity:
-    | Case         | Complexity |
-    |--------------|------------|
-    | Best Case    | O(...)     |
-    | Average Case | O(...)     |
-    | Worst Case   | O(...)     |
-    # Space Complexity:
-    | Type       | Complexity |
-    |------------|------------|
-    | Auxiliary  | O(...)     |
-    | Total      | O(...)     |
-    # Performance Factors
-    - Break down parts of the code (USE CODE BLOCKS) that contribute to the complexity
-    # Optimization Ideas 
-    - How to improve it
-
-    Use markdown formatting. Be technical and concise.
-    If input is not code, respond with "MISSING CODE".`;
-    if (iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ explanation: 'Analyzing complexity...' }, "*");
-    }
-
-    const complexity = await callAI(complexityPrompt, false);
-
-    // ERROR: Pass error state to frame
-    if (!complexity || complexity === 'MISSING CODE') {
-        if (iframe?.contentWindow) {
-            iframe.contentWindow.postMessage({ 
-                explanation: 'Failed to analyze time complexity.' 
-            }, '*');
+        // ERROR: Pass error state to frame
+        if (!algorithm || algorithm === 'default') {
+            UI.sendToIframe({ visualization: 'No sorting algorithm detected in the highlighted code.' });
+            return;
         }
-        return;
-    }
 
-    // SUCCESS: Pass successful output state to frame
-    if (complexity && iframe?.contentWindow) {
-        iframe.contentWindow.postMessage({ explanation: complexity }, "*");
-    }
-}
+        // Extract array from code, return [array as list]
+        const arrayPrompt = `Analyze the code and identify if it contains an array or any kind of list of values, intended to be sorted.  
+        - If so, extract the array literal from the code.
+        - If not, generate a dummy array with 5-10 random integers between 1-50.
+        Respond with ONLY the array values, comma separated, no brackets or extra text.`;
 
-// ======================== ENTER KEY HANDLER =================================
-document.addEventListener('keydown', async function (event) {
-    const activeTab = getActiveTab();
-    if (event.key !== 'Enter' || !activeTab?.parsing) return;
-
-    checkHighlightedText();
-
-    // Validate submission to save tokens:
-    // - prevent duplicates, - prevent empty selections, - prevent debounce spam
-    if (!selectedText || enterCooldown) {
-        console.log("Invalid selection! Dupliate/Empty/Too Fast submission!");
-        return;
-    }
-    lastSelectedText = selectedText;
-    enterCooldown = true;
-
-    try{
-        // Route to appropriate handler based on current page
-        switch (window.currentPage) {
-            case 1:
-                await handleExplanationPage();
-                break;
-            case 2:
-                await handleVisualizationPage();
-                break;
-            case 3:
-                await handleComplexityPage();
-                break;
-            default:
-                console.error("Unknown page:", window.currentPage);
+        const arrayData = await AI.call(arrayPrompt, false);
+        
+        // SUCCESS: Pass successful output state to frame
+        if (arrayData) {
+            UI.sendToIframe({ visualization: { algorithm, arrayData } });
         }
-        console.log("Conversation Length: " + activeTab.conversationHistory.length);
-    } finally {
-        setTimeout(() => {
-            enterCooldown = false; // Debounce time of 1.5s until enterCooldown flag reset
-    }, 1500);
-}
-});
+    },
+    // CASE 3: Performance page - Analyze time, space, and provide improvements
+    async complexity() {
+        // Analyze code, return [complexity table]
+        const complexityPrompt = `Analyze the complexity of the highlighted code.
+        You MUST follow this response structure:
+        # Time Complexity:
+        | Case         | Complexity |
+        |--------------|------------|
+        | Best Case    | O(...)     |
+        | Average Case | O(...)     |
+        | Worst Case   | O(...)     |
+        # Space Complexity:
+        | Type       | Complexity |
+        |------------|------------|
+        | Auxiliary  | O(...)     |
+        | Total      | O(...)     |
+        # Performance Factors
+        - Break down parts of the code (USE CODE BLOCKS) that contribute to the complexity
+        # Optimization Ideas 
+        - How to improve it
 
-// =========================== RESIZABLE TEXTAREA =============================
-if (grabBar && textarea) {
-    grabBar.addEventListener("mousedown", (e) => {
-        isDragging = true;
-        document.body.style.cursor = "ns-resize";
-    });
+        Use markdown formatting. Be technical and concise.
+        If input is not code, respond with "MISSING CODE".`;
+        
+        UI.sendToIframe({ explanation: 'Analyzing complexity...' });
+        const complexity = await AI.call(complexityPrompt, false);
+    
+        // ERROR: Pass error state to frame
+        if (!complexity || complexity === 'MISSING CODE') {
+            UI.sendToIframe({ explanation: 'Failed to analyze time complexity.' });
+            return;
+        }
+        // SUCCESS: Pass successful output state to frame
+        if (complexity) {
+            UI.sendToIframe({ explanation: complexity });
+        }
+    }
+};
 
-    document.addEventListener("mousemove", (e) => {
-        if (!isDragging) return;
+// =========================== EVENT HANDLERS ===================================
+
+const EventHandlers = {
+    tabClick(e) {
+        const tabButton = e.target.closest('.tab-button');
+        const closeButton = e.target.closest('.tab-close');
+        const newTabButton = e.target.closest('.new-tab-button');
+        
+        if (closeButton && tabButton) {
+            e.stopPropagation();
+            TabOperations.close(tabButton.dataset.tabId);
+        } else if (tabButton) { // Switch to specific tab
+            TabOperations.switch(tabButton.dataset.tabId);
+        } else if (newTabButton) { // New ID, swap to newly created tab button w new ID
+            const newId = TabOperations.create();
+            TabOperations.switch(newId);
+        }
+    },
+
+    dragStart(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton) return;
+        
+        State.draggedTabId = tabButton.dataset.tabId;
+        tabButton.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    },
+
+    dragOver(e) {
         e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton || !State.draggedTabId) return;
+        
+        State.dragOverTabId = tabButton.dataset.tabId;
+        
+        const tabContainer = DOM.get('tabContainer');
+        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('drag-over');
+        });
+        
+        if (State.draggedTabId !== State.dragOverTabId) {
+            tabButton.classList.add('drag-over');
+        }
+    },
 
-        const textareaEl = document.getElementById('codeInput');
-        if (!textareaEl) return;
-        const newHeight = e.clientY - textareaEl.getBoundingClientRect().top;
-        textareaEl.style.height = Math.max(100, newHeight) + "px";
-    });
+    dragLeave(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (tabButton) {
+            tabButton.classList.remove('drag-over');
+        }
+    },
 
-    document.addEventListener("mouseup", () => {
-        isDragging = false;
-        document.body.style.cursor = "default";
-    });
-}
+    drop(e) {
+        e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        
+        if (!tabButton || !State.draggedTabId || !State.dragOverTabId || State.draggedTabId === State.dragOverTabId) {
+            EventHandlers._cleanupDragState();
+            return;
+        }
+        
+        const fromIndex = TabUtils.getIndexById(State.draggedTabId);
+        const toIndex = TabUtils.getIndexById(State.dragOverTabId);
+        
+        TabOperations.reorder(fromIndex, toIndex);
+        EventHandlers._cleanupDragState();
+    },
+
+    dragEnd() {
+        EventHandlers._cleanupDragState();
+    },
+
+    _cleanupDragState() {
+        const tabContainer = DOM.get('tabContainer');
+        if (tabContainer) {
+            tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('drag-over', 'dragging');
+            });
+        }
+        State.draggedTabId = null;
+        State.dragOverTabId = null;
+    },
+
+    toggleParseMode(e) {
+        e.preventDefault();
+        
+        const activeTab = TabUtils.getActive();
+        if (!activeTab) return;
+        
+        const toggleButton = e.currentTarget;
+        const currentMode = toggleButton.dataset.mode || 'parse';
+
+        // Parsing mode enter
+        if (currentMode === 'parse') {
+            // EventHandlers._enterParseMode(activeTab);
+            TabOperations.saveState();
+            activeTab.parsing = true;
+            
+            // Trim input if necessary (save tokens!!), feed to AI for context
+            const inputText = activeTab.content;
+            const fileContext = inputText.length > CONFIG.MAX_FILE_SIZE
+                ? inputText.substring(0, CONFIG.MAX_FILE_SIZE / 2) 
+                    + '\n\n... [middle section truncated] ...\n\n'
+                    + inputText.substring(inputText.length - CONFIG.MAX_FILE_SIZE / 2)
+                : inputText;
+            
+            // Define content as property of activeTab, append to AI conversation history
+            activeTab.fileContext = fileContext;
+            activeTab.conversationHistory.push({
+                role: 'system',
+                content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
+            });
+            
+            TabOperations.loadState(activeTab);
+
+            // Give parsing state to iframe
+            UI.sendToIframe({ parsingState: true });
+        } else { // Edit mode enter
+            // EventHandlers._enterEditMode(activeTab);
+            if (State.currentAbortController) {
+                State.currentAbortController.abort();
+            }
+            // Reset all states (conversation history, parsing state, duplicate check flag)
+            activeTab.conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+            activeTab.parsing = false;
+            State.lastSelectedText = '';
+            
+            TabOperations.loadState(activeTab);
+
+            // Give parsing state to iframe
+            UI.sendToIframe({ parsingState: false });
+        }
+    },
+
+    async keyDown(e) {
+        const activeTab = TabUtils.getActive();
+        if (e.key !== 'Enter' || !activeTab?.parsing) return;
+
+        EventHandlers._checkHighlightedText();
+
+        // Validate submission to save tokens:
+        // - prevent duplicates, - prevent empty selections, - prevent debounce spam
+        if (!State.selectedText || State.enterCooldown) return;
+        
+        State.lastSelectedText = State.selectedText;
+        State.enterCooldown = true;
+
+        try {
+            switch (State.currentPage) {
+                case PAGE_TYPES.EXPLANATION:
+                    await PageHandlers.explanation();
+                    break;
+                case PAGE_TYPES.VISUALIZATION:
+                    await PageHandlers.visualization();
+                    break;
+                case PAGE_TYPES.COMPLEXITY:
+                    await PageHandlers.complexity();
+                    break;
+                default:
+                    Logger.error('Unknown page:', State.currentPage);
+            }
+        } finally {
+            setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 1.5s until enterCooldown flag reset
+        }
+    },
+
+    // Handle highlighted text, ensuring that highlighted text is within code box
+    _checkHighlightedText() {
+        const selection = window.getSelection().toString();
+        const highlightArea = DOM.get('highlightArea');
+        
+        // Check if highlighted text is in the highlight area and if anything is highlighted
+        if (selection && highlightArea?.textContent.includes(selection)) {
+            State.selectedText = selection;
+        }
+    },
+
+    // Info button click
+    infoClick() {
+        const infoPopup = DOM.get('infoPopup');
+        const infoButton = DOM.get('infoButton');
+        
+        if (!infoPopup || !infoButton) return;
+        
+        const isVisible = infoPopup.style.display === 'block';
+        infoPopup.style.display = isVisible ? 'none' : 'block';
+        infoButton.innerHTML = isVisible ? ' 🛈 ' : ' ✖ ';
+    },
+
+    // Take pgnum from iframe, stop API calls, give parsing state to iframe
+    pageMessage(event) {
+        if (event.data?.pageNumber === undefined) return;
+        
+        // Take pgnum from iframe
+        State.currentPage = event.data.pageNumber;
+        window.currentPage = State.currentPage;
+
+        // Stop API calls if page swapped
+        if (State.currentAbortController) {
+            State.currentAbortController.abort();
+        }
+
+        const activeTab = TabUtils.getActive();
+        if (activeTab) {
+            UI.sendToIframe({ parsingState: activeTab.parsing });
+        }
+    }
+};
 
 // =========================== INITIALIZATION ===================================
-function initializeApp() {
-    renderTabs();
-    const activeTab = getActiveTab();
 
-    // Load welcome tab content
-    if (activeTab && textarea) {
-        textarea.value = activeTab.content;
+function attachEventListeners() {
+    const tabContainer = DOM.get('tabContainer');
+    if (tabContainer) {
+        tabContainer.addEventListener('click', EventHandlers.tabClick);
+        tabContainer.addEventListener('dragstart', EventHandlers.dragStart);
+        tabContainer.addEventListener('dragover', EventHandlers.dragOver);
+        tabContainer.addEventListener('dragleave', EventHandlers.dragLeave);
+        tabContainer.addEventListener('drop', EventHandlers.drop);
+        tabContainer.addEventListener('dragend', EventHandlers.dragEnd);
+        tabContainer.addEventListener('scroll', UI.updateScrollFade);
     }
+    
+    const toggleButton = DOM.get('toggleParseButton');
+    if (toggleButton) {
+        toggleButton.addEventListener('click', EventHandlers.toggleParseMode);
+    }
+    
+    const infoButton = DOM.get('infoButton');
+    if (infoButton) {
+        infoButton.addEventListener('click', EventHandlers.infoClick);
+    }
+    
+    document.addEventListener('keydown', EventHandlers.keyDown);
+    window.addEventListener('message', EventHandlers.pageMessage);
+    window.addEventListener('resize', UI.updateScrollFade);
 }
 
+function initializeApp() {
+    UI.renderTabs();
+    
+    const activeTab = TabUtils.getActive();
+    const codeEl = DOM.getCodeElement();
+    
+    if (activeTab && codeEl && codeEl.tagName === 'TEXTAREA') {
+        codeEl.value = activeTab.content;
+    }
+    
+    attachEventListeners();
+    
+    Logger.info('Application initialized successfully');
+}
+
+// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeApp);
 } else {

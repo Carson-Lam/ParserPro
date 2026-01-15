@@ -1,3 +1,6 @@
+/*
+- Handler script for time complexity formatting and states given AI output
+*/
 // =========================== GLOBAL STATE ===================================
 window.onload = function() {
     // Send pgnum to parent window

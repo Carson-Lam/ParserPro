@@ -1,4 +1,3 @@
 states, improve animations (DONE)
 Debounce, prevent repeats (DONE)
-
-tabs, opening
+tabs (DONE)

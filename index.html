@@ -5,8 +5,8 @@
     <title> Code Visualizer </title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../styles/main.css">
-    <link href="../styles/prism.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link href="/styles/prism.css" rel="stylesheet"/>
 </head>
 
 <body>
@@ -18,8 +18,8 @@
                 <span id="closeX" onclick="closeFile(event)">✕</span>
             </button> -->
             <div id="tabContainer" class="tab-bar"></div>
-            <button id="toggleParseButton" data-mode="parse">⮞ [ PARSE MODE ]</button>
-            <button id="infoButton"> 🛈 Info </button>
+            <button id="toggleParseButton" data-mode="parse">⮞</button>
+            <button id="infoButton"> 🛈 </button>
         </div>
 
         <div id="content">
@@ -40,26 +40,32 @@
                 <h6><b>Welcome to ParserPro!</b></h6>
                 <p>ParserPro leverages artificial intelligence to read and
                     analyze your code, providing
-                    insightful line-by-line analysis using top intelligence models.</p>
+                    insightful line-by-line analysis using top intelligence models.
+                    <strong>Explain</strong>, <strong>visualize</strong>, and <strong>
+                    analyze</strong> your code with ParserPro!</p>
                 <br>
-                <h6><b>Using ParserPro:</b></h6>
+                <h6><b>Using Parserpro:</b></h6>
                 <p>ParserPro is easy to use. Enter your code into the IDE-Style window and click parse! Highlight the
-                    section of your code you wish to
-                    analyze and press the ENTER key on your keyboard. To adjust the window sizing, drag the marquee on
-                    the
-                    <strong>bottom right</strong> of the code input box.
+                    section of your code you wish to analyze and press the ENTER key on your keyboard. 
                 </p>
+                <br>
+                <h6><b>AI-based Features:</b></h6>
+                <ul>
+                    <li><strong>Explain:</strong> ParserPro will  explain your highlighted code section within its code tab context.</li>
+                    <li><strong>Visualize:</strong> ParserPro will detect the sorting algorithm & data (if present) in your highlighted and visualize it.</li>
+                    <li><strong>Analyze:</strong> ParserPro will analyze the time & space complexity of your highlighted code and suggest improvements.</li>
+                </ul>
             </div>
         </div>
     </div>
     </div>
 
     <!--Script-->
-    <script src="../scripts/handler.js"></script>
+    <script src="/scripts/handler.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"
         integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous">
     </script>
-    <script src="../scripts/prism.js"></script>
+    <script src="/scripts/prism.js"></script>
 </body>
 
 </html>
