@@ -16,14 +16,14 @@ const PAGE_TYPES = {
 
 const SYSTEM_PROMPT = 'You are an expert software engineer with decades of experience in understanding and explaining code.';
 
-const WELCOME_CONTENT = `// WELCOME TO PARSERPRO
-// To get started, see *Info* on the top right of your screen!
+// const WELCOME_CONTENT = `// WELCOME TO PARSERPRO
+// // To get started, see *Info* on the top right of your screen!
 
-public static void welcomePage() {
-    loadInterface();
-    GreetUser(yourName);
-}
-`
+// public static void welcomePage() {
+//     loadInterface();
+//     GreetUser(yourName);
+// }
+// `
 
 // =========================== STATE ===================================
 
@@ -32,7 +32,7 @@ const State = {
         {
             id: 'tab_0',
             name: 'Welcome',
-            content: WELCOME_CONTENT,
+            content: '',
             parsing: false,
             conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
             fileContext: ''
@@ -78,11 +78,6 @@ const EventHandlers = {
     welcomeNewTab() {
         const newId = TabOperations.create();
         TabOperations.switch(newId);
-    },
-
-    // Welcome page "About" button
-    welcomeAbout() {
-        EventHandlers.infoClick();
     },
 
     updateWelcomeVisibility() {
@@ -279,16 +274,23 @@ const EventHandlers = {
 
     // Info button click
     infoClick() {
-        const infoPopup = DOM.get('infoPopup');
-        const infoButton = DOM.get('infoButton');
+        // Check if Welcome still exists
+        const welcomeTab = TabUtils.getById('tab_0');
         
-        if (!infoPopup || !infoButton) return;
-        
-        const isVisible = infoPopup.style.display === 'block';
-        infoPopup.style.display = isVisible ? 'none' : 'block';
-        infoButton.innerHTML = isVisible ? ' 🛈 ' : ' ✖ ';
+        if (welcomeTab) {
+            TabOperations.switch('tab_0');
+        } else {
+            State.tabs.unshift({
+                id: 'tab_0',
+                name: 'Welcome',
+                content: '',
+                parsing: false,
+                conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
+                fileContext: ''
+            });
+            TabOperations.switch('tab_0');
+        }
     },
-
 
     // Take pgnum from iframe, stop API calls, give parsing state to iframe
     pageMessage(event) {
@@ -579,13 +581,21 @@ const AI = {
             // ====================================================
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (response.status === 429) {
+                    throw new Error('RATE_LIMIT');
+                } else if (response.status === 401) {
+                    throw new Error('AUTH_ERROR');
+                } else if (response.status >= 500) {
+                    throw new Error('SERVER_ERROR');
+                } else {
+                    throw new Error(`HTTP_ERROR_${response.status}`);
+                }            
             }
 
             const completion = await response.json();
             
             if (!completion?.choices?.[0]?.message?.content) {
-                throw new Error('Invalid API response structure');
+                throw new Error('INVALID_RESPONSE');
             }
             
             const aiResponse = completion.choices[0].message.content.trim();
@@ -727,7 +737,6 @@ function attachEventListeners() {
     }
     
     DOM.get('welcomeNewTab')?.addEventListener('click', EventHandlers.welcomeNewTab);
-    DOM.get('welcomeGetStarted')?.addEventListener('click', EventHandlers.welcomeAbout);
     DOM.get('toggleParseButton')?.addEventListener('click', EventHandlers.toggleParseMode);
     DOM.get('infoButton')?.addEventListener('click', EventHandlers.infoClick);
 
