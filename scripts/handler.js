@@ -3,7 +3,7 @@
 const CONFIG = {
     MAX_FILE_SIZE: 1000,
     MAX_HISTORY_ITEMS: 10,
-    DEBOUNCE_DELAY: 1500,
+    DEBOUNCE_DELAY: 2000,
     API_ENDPOINT: 'https://parserpro.onrender.com/parse',
     MODEL: 'llama-3.3-70b-versatile'
 };
@@ -31,7 +31,7 @@ const State = {
     tabs: [
         {
             id: 'tab_0',
-            name: 'Welcome.txt',
+            name: 'Welcome',
             content: WELCOME_CONTENT,
             parsing: false,
             conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
@@ -72,12 +72,253 @@ const TabUtils = {
     exists: (id) => State.tabs.some(tab => tab.id === id)
 };
 
-// =========================== TAB OPERATIONS ===================================
+// =========================== EVENT HANDLERS ===================================
+const EventHandlers = {
+    // Welcome page "Get Started" button
+    welcomeNewTab() {
+        const newId = TabOperations.create();
+        TabOperations.switch(newId);
+    },
 
+    // Welcome page "About" button
+    welcomeAbout() {
+        EventHandlers.infoClick();
+    },
+
+    updateWelcomeVisibility() {
+        const welcomeOverlay = DOM.get('welcomeOverlay');
+        const activeTab = TabUtils.getActive();
+        
+        if (!welcomeOverlay) return;
+        
+        // Show welcome overlay ONLY if tab_0 is active AND in edit mode
+        if (activeTab && activeTab.id === 'tab_0') {
+            welcomeOverlay.classList.add('visible');
+        } else {
+            welcomeOverlay.classList.remove('visible');
+        }
+    },
+
+    tabClick(e) {
+        const tabButton = e.target.closest('.tab-button');
+        const closeButton = e.target.closest('.tab-close');
+        const newTabButton = e.target.closest('.new-tab-button');
+        
+        if (closeButton && tabButton) {
+            e.stopPropagation();
+            TabOperations.close(tabButton.dataset.tabId);
+        } else if (tabButton) { // Switch to specific tab
+            TabOperations.switch(tabButton.dataset.tabId);
+        } else if (newTabButton) { // New ID, swap to newly created tab button w new ID
+            const newId = TabOperations.create();
+            TabOperations.switch(newId);
+        }
+    },
+
+    dragStart(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton) return;
+        
+        State.draggedTabId = tabButton.dataset.tabId;
+        tabButton.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    },
+
+    dragOver(e) {
+        e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        if (!tabButton || !State.draggedTabId) return;
+        
+        State.dragOverTabId = tabButton.dataset.tabId;
+        
+        const tabContainer = DOM.get('tabContainer');
+        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('drag-over');
+        });
+        
+        if (State.draggedTabId !== State.dragOverTabId) {
+            tabButton.classList.add('drag-over');
+        }
+    },
+
+    dragLeave(e) {
+        const tabButton = e.target.closest('.tab-button');
+        if (tabButton) {
+            tabButton.classList.remove('drag-over');
+        }
+    },
+
+    drop(e) {
+        e.preventDefault();
+        const tabButton = e.target.closest('.tab-button');
+        
+        if (!tabButton || !State.draggedTabId || !State.dragOverTabId || State.draggedTabId === State.dragOverTabId) {
+            EventHandlers._cleanupDragState();
+            return;
+        }
+        
+        const fromIndex = TabUtils.getIndexById(State.draggedTabId);
+        const toIndex = TabUtils.getIndexById(State.dragOverTabId);
+        
+        TabOperations.reorder(fromIndex, toIndex);
+        EventHandlers._cleanupDragState();
+    },
+
+    dragEnd() {
+        EventHandlers._cleanupDragState();
+    },
+
+    _cleanupDragState() {
+        const tabContainer = DOM.get('tabContainer');
+        if (tabContainer) {
+            tabContainer.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('drag-over', 'dragging');
+            });
+        }
+        State.draggedTabId = null;
+        State.dragOverTabId = null;
+    },
+
+    toggleParseMode(e) {
+        e.preventDefault();
+        
+        const activeTab = TabUtils.getActive();
+        if (!activeTab) return;
+        
+        const toggleButton = e.currentTarget;
+        const currentMode = toggleButton.dataset.mode || 'parse';
+
+        // Parsing mode enter
+        if (currentMode === 'parse') {
+            // EventHandlers._enterParseMode(activeTab);
+            TabOperations.saveState();
+            activeTab.parsing = true;
+            
+            // Trim input if necessary (save tokens!!), feed to AI for context
+            const inputText = activeTab.content;
+            const fileContext = inputText.length > CONFIG.MAX_FILE_SIZE
+                ? inputText.substring(0, CONFIG.MAX_FILE_SIZE / 2) 
+                    + '\n\n... [middle section truncated] ...\n\n'
+                    + inputText.substring(inputText.length - CONFIG.MAX_FILE_SIZE / 2)
+                : inputText;
+            
+            // Define content as property of activeTab, append to AI conversation history
+            activeTab.fileContext = fileContext;
+            activeTab.conversationHistory.push({
+                role: 'system',
+                content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
+            });
+            
+            TabOperations.loadState(activeTab);
+
+            // Give parsing state to iframe
+            UI.sendToIframe({ parsingState: true });
+
+        } else { // Edit mode enter
+            // EventHandlers._enterEditMode(activeTab);
+            if (State.currentAbortController) {
+                State.currentAbortController.abort();
+            }
+            // Reset all states (conversation history, parsing state, duplicate check flag)
+            activeTab.conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+            activeTab.parsing = false;
+            State.lastSelectedText = '';
+            
+            TabOperations.loadState(activeTab);
+
+            // Give parsing state to iframe
+            UI.sendToIframe({ parsingState: false });
+        }
+    },
+
+    async keyDown(e) {
+        const activeTab = TabUtils.getActive();
+        if (e.key !== 'Enter' || !activeTab?.parsing) return;
+
+        EventHandlers._checkHighlightedText();
+
+        // Validate submission to save tokens:
+        // - prevent duplicates, - prevent empty selections, - prevent debounce spam
+        if (!State.selectedText || State.selectedText === State.lastSelectedText || State.enterCooldown) {
+            return;
+        }
+
+        State.lastSelectedText = State.selectedText;
+        State.enterCooldown = true;
+
+        try {
+            switch (State.currentPage) {
+                case PAGE_TYPES.EXPLANATION:
+                    await PageHandlers.explanation();
+                    break;
+                case PAGE_TYPES.VISUALIZATION:
+                    await PageHandlers.visualization();
+                    break;
+                case PAGE_TYPES.COMPLEXITY:
+                    await PageHandlers.complexity();
+                    break;
+                default:
+                    Logger.error('Unknown page:', State.currentPage);
+            }
+        } finally {
+            setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 1.5s until enterCooldown flag reset
+        }
+        console.log(activeTab.conversationHistory.length);
+    },
+
+    // Handle highlighted text, ensuring that highlighted text is within code box
+    _checkHighlightedText() {
+        const selection = window.getSelection().toString();
+        const highlightArea = DOM.get('highlightArea');
+        
+        // Check if highlighted text is in the highlight area and if anything is highlighted
+        if (selection && highlightArea?.textContent.includes(selection)) {
+            State.selectedText = selection;
+        }
+    },
+
+    // Info button click
+    infoClick() {
+        const infoPopup = DOM.get('infoPopup');
+        const infoButton = DOM.get('infoButton');
+        
+        if (!infoPopup || !infoButton) return;
+        
+        const isVisible = infoPopup.style.display === 'block';
+        infoPopup.style.display = isVisible ? 'none' : 'block';
+        infoButton.innerHTML = isVisible ? ' 🛈 ' : ' ✖ ';
+    },
+
+
+    // Take pgnum from iframe, stop API calls, give parsing state to iframe
+    pageMessage(event) {
+        if (event.data?.pageNumber === undefined) return;
+        
+        // Take pgnum from iframe
+        State.currentPage = event.data.pageNumber;
+        window.currentPage = State.currentPage;
+
+        // Stop API calls if page swapped
+        if (State.currentAbortController) {
+            State.currentAbortController.abort();
+        }
+
+        // Reset duplicate check when switching pages
+        State.lastSelectedText = ''; 
+
+        const activeTab = TabUtils.getActive();
+        if (activeTab) {
+            UI.sendToIframe({ parsingState: activeTab.parsing });
+        }
+    },
+};
+
+// =========================== TAB OPERATIONS ===================================
 const TabOperations = {
+
     // Create tab: -define properties, -reset conversationHistory, -push to tabs array
     create(name = null, content = '') {
-        const newName = name || `Untitled-${State.tabIdCounter}.txt`;
+        const newName = name || `Code-${State.tabIdCounter}`;
         const newTab = {
             id: `tab_${State.tabIdCounter}`,
             name: newName,
@@ -111,6 +352,7 @@ const TabOperations = {
         
         // Update iframe to match new tab's parsing state
         UI.sendToIframe({ parsingState: newTab.parsing });
+        EventHandlers.updateWelcomeVisibility();
     },
 
     // Close tabs: -Don't close if only 1, -Swap to rightmost tab in index (Math.max) if current closed
@@ -203,7 +445,6 @@ const TabOperations = {
 };
 
 // =========================== UI RENDERING ===================================
-
 const UI = {
     // Render tabs: Render tab button, add to container, Render new tab (+) button, add to container, update fade
     renderTabs() {
@@ -222,7 +463,6 @@ const UI = {
         
         this.updateScrollFade();
     },
-
     // Create tab button
     _createTabButton(tab) {
         const button = document.createElement('button');
@@ -470,215 +710,6 @@ const PageHandlers = {
     }
 };
 
-// =========================== EVENT HANDLERS ===================================
-
-const EventHandlers = {
-    tabClick(e) {
-        const tabButton = e.target.closest('.tab-button');
-        const closeButton = e.target.closest('.tab-close');
-        const newTabButton = e.target.closest('.new-tab-button');
-        
-        if (closeButton && tabButton) {
-            e.stopPropagation();
-            TabOperations.close(tabButton.dataset.tabId);
-        } else if (tabButton) { // Switch to specific tab
-            TabOperations.switch(tabButton.dataset.tabId);
-        } else if (newTabButton) { // New ID, swap to newly created tab button w new ID
-            const newId = TabOperations.create();
-            TabOperations.switch(newId);
-        }
-    },
-
-    dragStart(e) {
-        const tabButton = e.target.closest('.tab-button');
-        if (!tabButton) return;
-        
-        State.draggedTabId = tabButton.dataset.tabId;
-        tabButton.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-    },
-
-    dragOver(e) {
-        e.preventDefault();
-        const tabButton = e.target.closest('.tab-button');
-        if (!tabButton || !State.draggedTabId) return;
-        
-        State.dragOverTabId = tabButton.dataset.tabId;
-        
-        const tabContainer = DOM.get('tabContainer');
-        tabContainer.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('drag-over');
-        });
-        
-        if (State.draggedTabId !== State.dragOverTabId) {
-            tabButton.classList.add('drag-over');
-        }
-    },
-
-    dragLeave(e) {
-        const tabButton = e.target.closest('.tab-button');
-        if (tabButton) {
-            tabButton.classList.remove('drag-over');
-        }
-    },
-
-    drop(e) {
-        e.preventDefault();
-        const tabButton = e.target.closest('.tab-button');
-        
-        if (!tabButton || !State.draggedTabId || !State.dragOverTabId || State.draggedTabId === State.dragOverTabId) {
-            EventHandlers._cleanupDragState();
-            return;
-        }
-        
-        const fromIndex = TabUtils.getIndexById(State.draggedTabId);
-        const toIndex = TabUtils.getIndexById(State.dragOverTabId);
-        
-        TabOperations.reorder(fromIndex, toIndex);
-        EventHandlers._cleanupDragState();
-    },
-
-    dragEnd() {
-        EventHandlers._cleanupDragState();
-    },
-
-    _cleanupDragState() {
-        const tabContainer = DOM.get('tabContainer');
-        if (tabContainer) {
-            tabContainer.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('drag-over', 'dragging');
-            });
-        }
-        State.draggedTabId = null;
-        State.dragOverTabId = null;
-    },
-
-    toggleParseMode(e) {
-        e.preventDefault();
-        
-        const activeTab = TabUtils.getActive();
-        if (!activeTab) return;
-        
-        const toggleButton = e.currentTarget;
-        const currentMode = toggleButton.dataset.mode || 'parse';
-
-        // Parsing mode enter
-        if (currentMode === 'parse') {
-            // EventHandlers._enterParseMode(activeTab);
-            TabOperations.saveState();
-            activeTab.parsing = true;
-            
-            // Trim input if necessary (save tokens!!), feed to AI for context
-            const inputText = activeTab.content;
-            const fileContext = inputText.length > CONFIG.MAX_FILE_SIZE
-                ? inputText.substring(0, CONFIG.MAX_FILE_SIZE / 2) 
-                    + '\n\n... [middle section truncated] ...\n\n'
-                    + inputText.substring(inputText.length - CONFIG.MAX_FILE_SIZE / 2)
-                : inputText;
-            
-            // Define content as property of activeTab, append to AI conversation history
-            activeTab.fileContext = fileContext;
-            activeTab.conversationHistory.push({
-                role: 'system',
-                content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}`
-            });
-            
-            TabOperations.loadState(activeTab);
-
-            // Give parsing state to iframe
-            UI.sendToIframe({ parsingState: true });
-        } else { // Edit mode enter
-            // EventHandlers._enterEditMode(activeTab);
-            if (State.currentAbortController) {
-                State.currentAbortController.abort();
-            }
-            // Reset all states (conversation history, parsing state, duplicate check flag)
-            activeTab.conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
-            activeTab.parsing = false;
-            State.lastSelectedText = '';
-            
-            TabOperations.loadState(activeTab);
-
-            // Give parsing state to iframe
-            UI.sendToIframe({ parsingState: false });
-        }
-    },
-
-    async keyDown(e) {
-        const activeTab = TabUtils.getActive();
-        if (e.key !== 'Enter' || !activeTab?.parsing) return;
-
-        EventHandlers._checkHighlightedText();
-
-        // Validate submission to save tokens:
-        // - prevent duplicates, - prevent empty selections, - prevent debounce spam
-        if (!State.selectedText || State.enterCooldown) return;
-        
-        State.lastSelectedText = State.selectedText;
-        State.enterCooldown = true;
-
-        try {
-            switch (State.currentPage) {
-                case PAGE_TYPES.EXPLANATION:
-                    await PageHandlers.explanation();
-                    break;
-                case PAGE_TYPES.VISUALIZATION:
-                    await PageHandlers.visualization();
-                    break;
-                case PAGE_TYPES.COMPLEXITY:
-                    await PageHandlers.complexity();
-                    break;
-                default:
-                    Logger.error('Unknown page:', State.currentPage);
-            }
-        } finally {
-            setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 1.5s until enterCooldown flag reset
-        }
-    },
-
-    // Handle highlighted text, ensuring that highlighted text is within code box
-    _checkHighlightedText() {
-        const selection = window.getSelection().toString();
-        const highlightArea = DOM.get('highlightArea');
-        
-        // Check if highlighted text is in the highlight area and if anything is highlighted
-        if (selection && highlightArea?.textContent.includes(selection)) {
-            State.selectedText = selection;
-        }
-    },
-
-    // Info button click
-    infoClick() {
-        const infoPopup = DOM.get('infoPopup');
-        const infoButton = DOM.get('infoButton');
-        
-        if (!infoPopup || !infoButton) return;
-        
-        const isVisible = infoPopup.style.display === 'block';
-        infoPopup.style.display = isVisible ? 'none' : 'block';
-        infoButton.innerHTML = isVisible ? ' 🛈 ' : ' ✖ ';
-    },
-
-    // Take pgnum from iframe, stop API calls, give parsing state to iframe
-    pageMessage(event) {
-        if (event.data?.pageNumber === undefined) return;
-        
-        // Take pgnum from iframe
-        State.currentPage = event.data.pageNumber;
-        window.currentPage = State.currentPage;
-
-        // Stop API calls if page swapped
-        if (State.currentAbortController) {
-            State.currentAbortController.abort();
-        }
-
-        const activeTab = TabUtils.getActive();
-        if (activeTab) {
-            UI.sendToIframe({ parsingState: activeTab.parsing });
-        }
-    }
-};
-
 // =========================== INITIALIZATION ===================================
 
 function attachEventListeners() {
@@ -691,18 +722,15 @@ function attachEventListeners() {
         tabContainer.addEventListener('drop', EventHandlers.drop);
         tabContainer.addEventListener('dragend', EventHandlers.dragEnd);
         tabContainer.addEventListener('scroll', UI.updateScrollFade);
+
+
     }
     
-    const toggleButton = DOM.get('toggleParseButton');
-    if (toggleButton) {
-        toggleButton.addEventListener('click', EventHandlers.toggleParseMode);
-    }
-    
-    const infoButton = DOM.get('infoButton');
-    if (infoButton) {
-        infoButton.addEventListener('click', EventHandlers.infoClick);
-    }
-    
+    DOM.get('welcomeNewTab')?.addEventListener('click', EventHandlers.welcomeNewTab);
+    DOM.get('welcomeGetStarted')?.addEventListener('click', EventHandlers.welcomeAbout);
+    DOM.get('toggleParseButton')?.addEventListener('click', EventHandlers.toggleParseMode);
+    DOM.get('infoButton')?.addEventListener('click', EventHandlers.infoClick);
+
     document.addEventListener('keydown', EventHandlers.keyDown);
     window.addEventListener('message', EventHandlers.pageMessage);
     window.addEventListener('resize', UI.updateScrollFade);
@@ -719,7 +747,8 @@ function initializeApp() {
     }
     
     attachEventListeners();
-    
+    EventHandlers.updateWelcomeVisibility();
+
     Logger.info('Application initialized successfully');
 }
 

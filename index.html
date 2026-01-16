@@ -5,31 +5,93 @@
     <title> Code Visualizer </title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/styles/main.css">
-    <link href="/styles/prism.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="./styles/main.css">
+    <link href="./styles/prism.css" rel="stylesheet"/>
 </head>
 
 <body>
     <div class="container-fluid mt-3 mx-auto" id="pageContainer">
         <div class="top-bar">
-            <!-- <button id="fileElement">
-                <img src="../images/file.png" id="fileIcon">
-                YourCode.txt
-                <span id="closeX" onclick="closeFile(event)">✕</span>
-            </button> -->
             <div id="tabContainer" class="tab-bar"></div>
-            <button id="toggleParseButton" data-mode="parse">⮞</button>
-            <button id="infoButton"> 🛈 </button>
+            <div class="button-group">
+                <button id="toggleParseButton" data-mode="parse">⮞</button>
+                <button id="infoButton"> 🛈 </button>
+            </div>
         </div>
 
         <div id="content">
             <div id="codeInputContainer">
                 <form id="codeForm">
-                    <!--ID is not used-->
                     <textarea id="codeInput" name="codeInput" required placeholder="Enter your code here..."
                         style="text-align: left; vertical-align: top;"></textarea>
                 </form>
                 <div id = "grabBar"></div>
+            </div>
+            
+            <div id="welcomeOverlay" class="welcome-overlay">
+                <div class="welcome-content">
+                    <div class="welcome-header">
+                        <h1>ParserPro</h1>
+                        <p class="welcome-subtitle">AI-Powered Code Analysis</p>
+                    </div>
+
+                    <div class="welcome-sections">
+                        <div class="left-column">
+                            <div class="welcome-section">
+                                <h2>Start</h2>
+                                <div class="welcome-actions">
+                                    <button class="welcome-action" id="welcomeNewTab">
+                                        <span class="action-icon">🗎</span>
+                                        <span class="action-text">Get Started...</span>
+                                    </button>
+                                    <button class="welcome-action" id="welcomeGetStarted">
+                                        <span class="action-icon">🛈</span>
+                                        <span class="action-text">About...</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="welcome-section">
+                                <h2>How to Use</h2>
+                                <ol class="welcome-steps">
+                                    <li>Write or paste your code in the editor</li>
+                                    <li>Click parse <strong>[⮞]</strong> to analyze</li>
+                                    <li>Highlight any code section and press <kbd>Enter</kbd></li>
+                                    <li>Navigate between analysis tabs to explore results</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div class="welcome-section">
+                            <h2>Features</h2>
+                            <div class="welcome-feature-list">
+                                <div class="welcome-feature">
+                                    <div class="feature-content">
+                                        <h3>Code Explanation</h3>
+                                        <p>Evaluate your highlighted code in context & break it down line-by-line</p>
+                                    </div>
+                                </div>
+                                <div class="welcome-feature">
+                                    <div class="feature-content">
+                                        <h3>Algorithm Visualization</h3>
+                                        <p>If your highlighted code has a sorting algorithm, visualize it step by step</p>
+                                    </div>
+                                </div>
+                                <div class="welcome-feature">
+                                    <div class="feature-content">
+                                        <h3>Complexity Analysis</h3>
+                                        <p>Understand your code's time and space complexity & receive optimization suggestions</p>
+                                    </div>
+                                </div>
+                                <div class="welcome-feature">
+                                    <div class="feature-content">
+                                        <h3>Cached memory</h3>
+                                        <p>ParserPro remembers your previous highlights and queries as you evaluate </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </div>
 
             <div id="frameOutput">
@@ -58,14 +120,13 @@
             </div>
         </div>
     </div>
-    </div>
 
     <!--Script-->
-    <script src="/scripts/handler.js"></script>
+    <script src="./scripts/handler.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"
         integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous">
     </script>
-    <script src="/scripts/prism.js"></script>
+    <script src="./scripts/prism.js"></script>
 </body>
 
 </html>

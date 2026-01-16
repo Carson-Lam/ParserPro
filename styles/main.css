@@ -8,6 +8,11 @@
     margin-top: 0px;
 }
 
+p, h1, h2, h3, h4, h5, h6, ul, ol {
+    margin: 0;
+    padding: 0;
+}
+
 .container-fluid {
     padding: 0 !important;
     margin: 0 !important;
@@ -84,7 +89,7 @@ hr {
     z-index: 100;
     display: flex;
     flex-direction: row;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     background-color: #181818;
 }
@@ -94,14 +99,12 @@ hr {
     flex-direction: row;
     align-items: center;
     gap: 0;
-    margin-right: auto;
     overflow-x: auto;
     overflow-y: hidden;
     max-width: 70%;
     position: relative;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
-    /* background-color: red; */
 }
 
 .tab-bar::-webkit-scrollbar {
@@ -126,9 +129,9 @@ hr {
     align-items: center;
     gap: 8px;
     background-color: var(--vscode-tabbar-bg);
-    border-top: 1.5px solid transparent;
+    border-top: 1.9px solid transparent;
     border-bottom: none;
-    border-left: 0.5px solid var(--vscode-darker-bg);
+    border-left: none;
     border-right: 0.5px solid var(--vscode-darker-bg);
     color: white;
     font-size: 15px;
@@ -143,7 +146,7 @@ hr {
 }
 
 .tab-button:hover {
-    background-color: var(--vscode-border);
+    background-color: var(--vscode-highlight);
 }
 
 .tab-button.active {
@@ -185,8 +188,7 @@ hr {
 }
 
 .tab-close:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background-color: var(--vscode-border);
 }
 
 .new-tab-button {
@@ -205,8 +207,7 @@ hr {
 }
 
 .new-tab-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
+    background-color: var(--vscode-border);
 }
 
 /* ==================== CONTENT AREA ==================== */
@@ -231,14 +232,200 @@ hr {
     border: 1px solid hsl(0, 0%, 17%);
 }
 
+/* ==================== WELCOME PAGE ==================== */
+.welcome-overlay {
+    position: absolute;
+    top: 5.0vh;
+    left: 0;
+    width: 100%;
+    height: calc(95vh - 1px);
+    background-color: var(--vscode-bg);
+    z-index: 10;
+    display: none;
+    overflow-y: scroll;
+}
+
+.welcome-overlay.visible {
+    display: block;
+}
+
+.welcome-content {
+    max-width: 80vw;
+    margin: 0 auto;
+    padding: 60px 60px;
+}
+
+/* Header */
+.welcome-header {
+    margin-bottom: 60px;
+}
+
+.welcome-header h1 {
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--vscode-text);
+}
+
+.welcome-subtitle {
+    font-size: 1.5rem;
+    color: var(--vscode-line-number);
+}
+
+/* Sections */
+.welcome-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 5vw;
+}
+
+.left-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 3vh;
+}
+
+.welcome-feature-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 3vh;
+}
+
+.welcome-section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--vscode-text);
+    margin-bottom: 20px;
+}
+
+/* Start */
+.welcome-actions {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.welcome-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--vscode-blue);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+    padding: 0px;
+}
+
+.action-icon {
+    font-size: 1.3rem;
+    width: 30px;
+    flex-shrink: 0;
+}
+
+/* Features */
+.welcome-feature {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 15px 15px;
+    background-color: var(--vscode-highlight);
+    border-top: 1px solid var(--vscode-blue);
+}
+
+.feature-content h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--vscode-text);
+}
+
+.feature-content p {
+    font-size: 0.75rem;
+    color: var(--vscode-line-number);
+}
+
+.welcome-feature:hover {
+    /* border-top: 1px solid var(--vscode-blue); */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+
+
+/* Steps */
+.welcome-steps {
+    list-style: none;
+    counter-reset: step-counter;
+    padding: 0;
+    margin: 0;
+}
+
+.welcome-steps li {
+    counter-increment: step-counter;
+    position: relative;
+    padding: 12px 0 12px 40px;
+    font-size: 0.85rem;
+    color: var(--vscode-text);
+    line-height: 1.6;
+}
+
+.welcome-steps li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: 0;
+    width: 24px;
+    height: 24px;
+    /* background-color: red; */
+    color: var(--vscode-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.welcome-steps strong {
+    color: var(--vscode-blue);
+}
+
+.welcome-steps kbd {
+    background-color: var(--vscode-highlight);
+    border: 1px solid var(--vscode-border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    color: var(--vscode-text);
+}
+
+/* Scrollbar for welcome overlay */
+.welcome-overlay::-webkit-scrollbar {
+    width: 12px;
+}
+
+.welcome-overlay::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.welcome-overlay::-webkit-scrollbar-thumb {
+    background: #3C3C3C;
+    min-height: 44px;
+}
+
+.welcome-overlay::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 /* ==================== CODE INPUT ==================== */
 #codeInput,
 #highlightArea {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     flex: 0 1 auto;
     height: 50vh;
-    min-height: 30vh;
-    max-height: 70vh;
     width: 100%;
     background-color: var(--vscode-bg);
     /* background-color: red; */
@@ -268,19 +455,24 @@ hr {
 
 
 /* ==================== TOGGLE PARSE BUTTON ==================== */
+.button-group {
+    display: flex;
+    gap: 10px; 
+    margin-right: 10px; 
+}
+
 #toggleParseButton {
-    background-color: var(--vscode-bg);
-    border-top: 1.5px solid var(--vscode-blue);
-    border-bottom: none;
-    border-left: 1px solid var(--vscode-darker-bg);
-    border-right: 1px solid var(--vscode-darker-bg);
-    z-index: 300;
-    font-size: 15px;
+    background-color: transparent;
+    border: none;
+    border-radius: 3px;
     font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
-    color: white;
-    padding: 5px 15px;
-    transition: background-color 0.2s ease;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ccc;
+    padding: 0px 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 #toggleParseButton:hover {
@@ -294,18 +486,17 @@ hr {
 
 /* ==================== INFO BUTTON ==================== */
 #infoButton {
-    background-color: var(--vscode-bg);
-    border-top: 1.5px solid var(--vscode-blue);
-    border-bottom: none;
-    border-left: 2px solid var(--vscode-darker-bg);
-    border-right: 1px solid var(--vscode-darker-bg);
-    z-index: 300;
-    font-size: 15px;
+    background-color: transparent;
+    border: none;
+    border-radius: 3px;
     font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
-    color: white;
-    padding: 5px 13px;
-    transition: background-color 0.2s ease;
-
+    font-size: 18px;
+    font-weight: bold;
+    color: #ccc;
+    padding: 0px 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 #infoButton:hover {
@@ -385,3 +576,10 @@ hr {
     background: var(--vscode-blue);
 }
 
+/* ==================== RESPONSIVENESS ==================== */
+@media (max-width: 900px) {
+    .welcome-sections {
+        grid-template-columns: 1fr;
+        gap: 3vh;
+    }
+}
