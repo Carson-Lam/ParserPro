@@ -42,6 +42,9 @@ app.post('/parse', async (req, res) => {
     }
 });
 
+app.post('/',  async (req, res) => {
+    res.json('Server is running');
+});
 
 app.listen(port, () => {
     console.log(`Server running on ${port ? `http://localhost:${port}` : 'Live Render URL'}`);

@@ -520,9 +520,9 @@ const UI = {
         // Set tab icon
         const fileIcon = document.createElement('img');
         if (tab.id === 'tab_0') {
-            fileIcon.src = '../images/ParserPro.png'; 
+            fileIcon.src = './images/ParserPro.png'; 
         } else {
-            fileIcon.src = '../images/file.png';
+            fileIcon.src = './images/file.png';
         }
         fileIcon.className = 'file-icon';
         fileIcon.alt = '';
