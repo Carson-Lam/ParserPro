@@ -13,18 +13,11 @@ p, h1, h2, h3, h4, h5, h6, ul, ol {
     padding: 0;
 }
 
-.container-fluid {
-    padding: 0 !important;
-    margin: 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-}
 
 #pageContainer {
     background-color: var(--vscode-bg);
     display: flex;
-    flex-direction: row;
-    /* position: absolute; */
+    flex-direction: column;
     top: 0;
     left: 0;
     width: 100%;
@@ -40,6 +33,7 @@ p, h1, h2, h3, h4, h5, h6, ul, ol {
     --vscode-text: #d4d4d4;
     --vscode-highlight: #2c2c2c;
     --vscode-blue: #007acc;
+    --vscode-hover-blue: #0751b3;
     --vscode-line-number: #858585;
     --vscode-border: #474747;
 
@@ -82,16 +76,15 @@ hr {
 
 /* ==================== TABS ==================== */
 .top-bar {
-    position: fixed;
-    top: 0;
     width: 100%;
     height: 43px;
+    flex-shrink: 0;
     z-index: 100;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    background-color: #181818;
+    background-color: var(--vscode-tabbar-bg);
 }
 
 .tab-bar {
@@ -235,24 +228,26 @@ hr {
 /* ==================== WELCOME PAGE ==================== */
 .welcome-overlay {
     position: absolute;
-    top: 5.0vh;
+    top: 43px;
     left: 0;
     width: 100%;
-    height: calc(95vh - 1px);
+    height: calc(100vh - 43px);
     background-color: var(--vscode-bg);
     z-index: 10;
     display: none;
     overflow-y: scroll;
+    flex-direction: column;
 }
 
 .welcome-overlay.visible {
-    display: block;
+    display: flex;
 }
 
 .welcome-content {
-    max-width: 80vw;
+    width: 80vw;
     margin: 0 auto;
     padding: 60px 60px;
+    flex: 1;
 }
 
 /* Header */
@@ -326,7 +321,7 @@ hr {
 }
 
 .welcome-action:hover {
-    color: #0751b3;
+    color: var(--vscode-hover-blue)
 }
 
 
@@ -412,6 +407,33 @@ hr {
     color: var(--vscode-text);
 }
 
+/* Footer */
+.welcome-footer{
+    width: 100;
+    background-color: var(--vscode-darker-bg);   
+    padding: 1vh 0px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1vw;
+}
+
+.welcome-footer p {
+    font-size: 0.75rem;
+    color: var(--vscode-line-number);
+}
+
+.welcome-footer a{
+    font-size: 0.75rem;
+    color: var(--vscode-blue);
+    text-decoration: none;
+}
+
+.welcome-footer a:hover{
+    color: var(--vscode-hover-blue);
+}
+
 /* Scrollbar for welcome overlay */
 .welcome-overlay::-webkit-scrollbar {
     width: 12px;
@@ -431,27 +453,37 @@ hr {
 }
 
 /* ==================== CODE INPUT ==================== */
+#codeInputContainer{
+    display: flex;
+    flex-direction: column;
+    height: 50vh;
+    min-height: 100px;
+
+}
+
+#codeForm{
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 #codeInput,
 #highlightArea {
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    flex: 0 1 auto;
-    height: 50vh;
-    width: 100%;
+    flex: 1;
+    min-height: 0;
+    width: 100%;    
     background-color: var(--vscode-bg);
-    /* background-color: red; */
     color: white;
     font-size: 16px;
     border: none;
-    /* remove form border */
     outline: none;
-    /* remove form outline */
     align-items: flex-start;
-    display: block;
-    padding-left: 15px;
-    margin-top: 5.0vh;
-    margin-left: 3px;
-    margin-bottom: 0px;
+    padding: 15px 20px;
+    margin: 0;
     resize: none;
+    overflow: auto;
 }
 
 #codeInput::placeholder {

@@ -2,7 +2,9 @@
 <html>
 
 <head>
-    <title> Code Visualizer </title>
+    <title> ParserPro </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="./images/ParserPro.png">
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="./styles/main.css">
@@ -10,7 +12,7 @@
 </head>
 
 <body>
-    <div class="container-fluid mt-3 mx-auto" id="pageContainer">
+    <div id="pageContainer">
         <div class="top-bar">
             <div id="tabContainer" class="tab-bar"></div>
             <div class="button-group">
@@ -90,7 +92,13 @@
                             </div>
                         </div>
                     </div>
-
+                </div>
+                <div class="welcome-footer">
+                    <p>Made by <a href="https://www.linkedin.com/in/lam-carson/">Carson Lam</a></p>
+                    <p>|</p>
+                    <p>Powered by <a href="https://console.groq.com/docs/overview">Groqcloud</a></p> 
+                    <p>|</p>
+                    <a href="https://wikigrapher.vercel.app/">WikiGrapher</a>
                 </div>
             </div>
 
@@ -98,26 +106,6 @@
                 <iframe id="frameExplanation" src="explanation.html" frameborder="0"
                     style="width:100%; height:100%;"></iframe>
             </div>
-            <!-- <div id="infoPopup">
-                <h6><b>Welcome to ParserPro!</b></h6>
-                <p>ParserPro leverages artificial intelligence to read and
-                    analyze your code, providing
-                    insightful line-by-line analysis using top intelligence models.
-                    <strong>Explain</strong>, <strong>visualize</strong>, and <strong>
-                    analyze</strong> your code with ParserPro!</p>
-                <br>
-                <h6><b>Using Parserpro:</b></h6>
-                <p>ParserPro is easy to use. Enter your code into the IDE-Style window and click parse! Highlight the
-                    section of your code you wish to analyze and press the ENTER key on your keyboard. 
-                </p>
-                <br>
-                <h6><b>AI-based Features:</b></h6>
-                <ul>
-                    <li><strong>Explain:</strong> ParserPro will  explain your highlighted code section within its code tab context.</li>
-                    <li><strong>Visualize:</strong> ParserPro will detect the sorting algorithm & data (if present) in your highlighted and visualize it.</li>
-                    <li><strong>Analyze:</strong> ParserPro will analyze the time & space complexity of your highlighted code and suggest improvements.</li>
-                </ul>
-            </div> -->
         </div>
     </div>
 

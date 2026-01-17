@@ -94,6 +94,7 @@ const EventHandlers = {
         }
     },
 
+    // Handle tabbar clicks - close button, new tab, switch tab
     tabClick(e) {
         const tabButton = e.target.closest('.tab-button');
         const closeButton = e.target.closest('.tab-close');
@@ -110,6 +111,7 @@ const EventHandlers = {
         }
     },
 
+    // Dragging
     dragStart(e) {
         const tabButton = e.target.closest('.tab-button');
         if (!tabButton) return;
@@ -174,6 +176,7 @@ const EventHandlers = {
         State.dragOverTabId = null;
     },
 
+    // Handle parse button
     toggleParseMode(e) {
         e.preventDefault();
         
@@ -208,8 +211,9 @@ const EventHandlers = {
 
             // Give parsing state to iframe
             UI.sendToIframe({ parsingState: true });
-
-        } else { // Edit mode enter
+        
+        // Edit mode enter
+        } else { 
             // EventHandlers._enterEditMode(activeTab);
             if (State.currentAbortController) {
                 State.currentAbortController.abort();
@@ -226,6 +230,7 @@ const EventHandlers = {
         }
     },
 
+    // Handle Enter key code submission
     async keyDown(e) {
         const activeTab = TabUtils.getActive();
         if (e.key !== 'Enter' || !activeTab?.parsing) return;
@@ -312,6 +317,39 @@ const EventHandlers = {
         if (activeTab) {
             UI.sendToIframe({ parsingState: activeTab.parsing });
         }
+    },
+
+    // Grabbar handler
+    initResize() {
+        const grabBar = DOM.get('grabBar');
+        const frameOutput = DOM.get('frameOutput');
+        if (!grabBar) return;
+        
+        // Detect Mousedown
+        grabBar.addEventListener('mousedown', () => {
+            document.body.style.cursor = 'ns-resize';
+            // Prevent iframe from tracking pointer so mouseMove (index.html property) isn't overwritten
+            if (frameOutput) frameOutput.style.pointerEvents = 'none'; 
+
+            // Function that executes on mousemove, set bounds for codeinput and jframe height
+            const onMove = (e) => {
+                const newHeight = e.clientY - 43; 
+                if (newHeight > 100 && newHeight < window.innerHeight - 200) {
+                    DOM.get('codeInputContainer').style.height = newHeight + 'px';
+                }
+            };
+            
+            // Function that executes on mouseUp, resets moving statess
+            const onUp = () => {
+                if (frameOutput) frameOutput.style.pointerEvents = 'auto';
+                document.body.style.cursor = '';
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            };
+            
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
     },
 };
 
@@ -481,7 +519,11 @@ const UI = {
         
         // Set tab icon
         const fileIcon = document.createElement('img');
-        fileIcon.src = '../images/file.png';
+        if (tab.id === 'tab_0') {
+            fileIcon.src = '../images/ParserPro.png'; 
+        } else {
+            fileIcon.src = '../images/file.png';
+        }
         fileIcon.className = 'file-icon';
         fileIcon.alt = '';
         fileIcon.setAttribute('aria-hidden', 'true');
@@ -757,6 +799,7 @@ function initializeApp() {
     
     attachEventListeners();
     EventHandlers.updateWelcomeVisibility();
+    EventHandlers.initResize();
 
     Logger.info('Application initialized successfully');
 }

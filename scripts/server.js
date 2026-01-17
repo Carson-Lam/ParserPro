@@ -16,8 +16,6 @@ app.use(express.json());
 const port = process.env.PORT || 5000;
 const apiKey = process.env.GROQ_API_KEY;
 
-console.log('Gemini API Key exists:', !!geminiKey);
-
 app.post('/parse', async (req, res) => {
     const {messages, model}= req.body;
     const url = `https://api.groq.com/openai/v1/chat/completions`;
