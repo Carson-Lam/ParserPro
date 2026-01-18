@@ -1,27 +1,88 @@
 # ParserPro
 
+AI-powered code analyzer for instant explanations, visualizations, and complexity analysis.
+
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)]()
+
 ## Overview
-ParserPro is a web-based feature-rich code analyzer 
+
+ParserPro is a web-based code analysis tool built with vanilla JavaScript, HTML, and CSS. It provides **plug-and-play**, **one-stop-shop** code analysis leveraging AI to deliver instant insights through an intuitive interface.
+
 
 ## Features
 
-- Line-by-line powerful AI code analysis and breakdown
-    
-- Data structure visualizer based on highlighted code
+### Code Explanation
+- **Summary**: Understand how your highlighted code fits within the broader context
+- **Key Concepts**: Identify programming patterns and principles used
+- **Line-by-Line**: Step-through breakdown of what each line does
 
-- Tree generator based on highlighted code
+### Algorithm Visualization
+- Automatically detects sorting algorithms in your code
+- Generates step-by-step visual animation
+- Uses your array data or generates *dummy data* automatically
+- Supports: Bubble, Insertion, Selection, Quick, and Merge Sort
 
-- Engaging and fully-animated IDE-inspired UI
+### Complexity Analysis
+- **Time Complexity**: Best, average, and worst-case scenarios
+- **Space Complexity**: Auxiliary and total memory usage
+- **Optimization Tips**: AI-powered suggestions to improve performance
 
-- Syntax highlighting for Java, Python, C, C++, CSS, HTML, Javascript
+## Demo
+![ParserPro Demo](media\ParserPro.gif)
 
-## Usage
-Follow the [github-pages link](https://carson-lam.github.io/ParserPro-EmoryHacks/) under *Deployments*.
+## Quick Start
 
-## Dependencies
+**Live Version:** [Try ParserPro Now]()
 
-- [Bootstrap](https://getbootstrap.com/)
-- [Marked.js](https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js) Markdown formatter 
-- [Prism.js](https://www.jsdelivr.com/package/npm/prismjs) syntax highlighter
+### Local Development
 
+Want to run locally? [Contact me](mailto:lamcn51@gmail.com) for setup instructions.
 
+## Architecture
+
+ParserPro uses a **parent + iframe** architecture for separation of concerns:
+```
+index.html (parent)
+├── explanation.html (iframe) - Code explanations
+├── sort.html (iframe) - Sorting visualizations  
+└── complexity.html (iframe) - Performance analysis
+```
+
+**Communication Flow:**
+1. User highlights code in parent window
+2. Parent sends code to backend API
+3. AI processes request (Groq LLM)
+4. Parent forwards results to active iframe via `postMessage`
+5. Iframe renders visualization/analysis
+
+**Security:** API keys are handled server-side only. Client never sees credentials.
+
+## Tech Stack
+
+### Frontend
+- **Vanilla JavaScript** - Core logic and DOM manipulation
+- **HTML/CSS** - UI and styling
+- [**Prism.js**](https://prismjs.com/) - Syntax highlighting
+- [**Marked.js**](https://marked.js.org/) - Markdown rendering for AI responses
+
+### Backend
+- **Express.js** - API routing and server
+- **Groq API** - LLM inference ([llama-3.3-70b-versatile](https://console.groq.com/docs/model/llama-3.3-70b-versatile))
+
+### Fonts
+- Segoe UI (interface)
+- Consolas (code blocks)
+
+## License
+
+MIT License - feel free to use and modify
+
+## Contact
+
+**Carson Lam**  
+Mail: [lamcn51@gmail.com](mailto:lamcn51@gmail.com)  
+LinkedIn: [Linkedin](https://www.linkedin.com/in/lam-carson/)
+
+---
+
+⭐ Star this repo if you found it helpful!
