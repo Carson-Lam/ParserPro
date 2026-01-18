@@ -17,8 +17,7 @@ ParserPro is a web-based code analysis tool built with vanilla JavaScript, HTML,
 - **Line-by-Line**: Step-through breakdown of what each line does
 
 #### Algorithm Visualization
-- Automatically detects sorting algorithms in your code
-- Generates step-by-step visual animation
+- Detects sorting algorithms & generates step-by-step visual animation
 - Uses your array data or generates *dummy data* automatically
 - Supports: Bubble, Insertion, Selection, Quick, and Merge Sort
 
@@ -34,9 +33,7 @@ ParserPro is a web-based code analysis tool built with vanilla JavaScript, HTML,
 
 **Live Version:** [Try ParserPro Now]()
 
-### Local Development
-
-Want to run locally? [Contact me](mailto:lamcn51@gmail.com) for setup instructions.
+**Local Development:** Want to run locally? [Contact me](mailto:lamcn51@gmail.com) for setup instructions.
 
 ## Architecture
 

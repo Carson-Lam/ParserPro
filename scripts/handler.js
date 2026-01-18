@@ -4,7 +4,7 @@ const CONFIG = {
     MAX_FILE_SIZE: 1000,
     MAX_HISTORY_ITEMS: 10,
     DEBOUNCE_DELAY: 2000,
-    API_ENDPOINT: 'https://parserpro.onrender.com/parse',
+    API_ENDPOINT: '/parse',
     MODEL: 'llama-3.3-70b-versatile'
 };
 
