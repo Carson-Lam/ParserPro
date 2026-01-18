@@ -11,24 +11,24 @@ ParserPro is a web-based code analysis tool built with vanilla JavaScript, HTML,
 
 ## Features
 
-### Code Explanation
+#### Code Explanation
 - **Summary**: Understand how your highlighted code fits within the broader context
 - **Key Concepts**: Identify programming patterns and principles used
 - **Line-by-Line**: Step-through breakdown of what each line does
 
-### Algorithm Visualization
+#### Algorithm Visualization
 - Automatically detects sorting algorithms in your code
 - Generates step-by-step visual animation
 - Uses your array data or generates *dummy data* automatically
 - Supports: Bubble, Insertion, Selection, Quick, and Merge Sort
 
-### Complexity Analysis
+#### Complexity Analysis
 - **Time Complexity**: Best, average, and worst-case scenarios
 - **Space Complexity**: Auxiliary and total memory usage
 - **Optimization Tips**: AI-powered suggestions to improve performance
 
 ## Demo
-![ParserPro Demo](media\ParserPro.gif)
+![ParserPro Demo](media/ParserPro.gif)
 
 ## Quick Start
 
@@ -59,17 +59,17 @@ index.html (parent)
 
 ## Tech Stack
 
-### Frontend
+#### Frontend
 - **Vanilla JavaScript** - Core logic and DOM manipulation
 - **HTML/CSS** - UI and styling
 - [**Prism.js**](https://prismjs.com/) - Syntax highlighting
 - [**Marked.js**](https://marked.js.org/) - Markdown rendering for AI responses
 
-### Backend
+#### Backend
 - **Express.js** - API routing and server
 - **Groq API** - LLM inference ([llama-3.3-70b-versatile](https://console.groq.com/docs/model/llama-3.3-70b-versatile))
 
-### Fonts
+#### Fonts
 - Segoe UI (interface)
 - Consolas (code blocks)
 
