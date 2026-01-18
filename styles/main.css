@@ -13,6 +13,14 @@ p, h1, h2, h3, h4, h5, h6, ul, ol {
     padding: 0;
 }
 
+#frameOutput,
+.tab-bar,
+.tab-button,
+.navbar,
+.navbar a {
+    cursor: default !important;
+    user-select: none;
+}
 
 #pageContainer {
     background-color: var(--vscode-bg);
@@ -221,8 +229,6 @@ hr {
     width: 100%;
     display: block;
     margin-top: 0;
-    resize: vertical;
-    border: 1px solid hsl(0, 0%, 17%);
 }
 
 /* ==================== WELCOME PAGE ==================== */
@@ -339,7 +345,7 @@ hr {
     justify-content: flex-start;
     padding: 15px 15px;
     background-color: var(--vscode-highlight);
-    border-top: 1px solid var(--vscode-blue);
+    /* border-top: 1px solid var(--vscode-blue); */
 }
 
 .feature-content h3 {
@@ -354,12 +360,19 @@ hr {
 }
 
 .welcome-feature:hover {
-    /* border-top: 1px solid var(--vscode-blue); */
+    border-top: 1px solid var(--vscode-blue);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transform: translateY(-2px);
 }
 
-
+/* Footnote */
+#welcomeFootnote {
+    display: flex;
+    justify-content: flex-end;
+    padding: 5px 0px;
+    font-size: 0.9rem;
+    color: var(--vscode-blue);    
+}
 
 /* Steps */
 .welcome-steps {
@@ -484,13 +497,16 @@ hr {
     margin: 0;
     resize: none;
     overflow: auto;
+
+    /* Prevent long lines from overflowing */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;  
 }
 
 #codeInput::placeholder {
-    color: var(--vscode-border);
+    color: var(--vscode-line-number);
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    opacity: 1;
-    transition: opacity 0.3s ease;
     opacity: 1;
     transition: opacity 0.3s ease;
 }
@@ -570,11 +586,11 @@ hr {
     width: 70vw;
 } */
 
+
 /* ==================== SCROLLBARS ==================== */
 #codeInput::-webkit-scrollbar,
 #highlightArea::-webkit-scrollbar{
-    width: 16px;                   
-    height: 344px;              
+    width: 12px;                   
 }
 
 #codeInput::-webkit-scrollbar-track,

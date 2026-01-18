@@ -86,6 +86,15 @@ function showExplanation(explanationContent) {
     // Set text content to AI analysis stage
     stageHeader.textContent = "Execute AI analysis";
     header.textContent = "";
+
+    // If error, set error text to red
+    if (explanationContent.startsWith('⚠')){
+        description.classList.add('error');
+    } else {
+        description.classList.remove('error');
+    }
+
+    // On succeed, format AI response
     description.innerHTML = marked.parse(explanationContent);
 
     restartAnimations();

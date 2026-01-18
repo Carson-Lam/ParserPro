@@ -240,6 +240,7 @@ const EventHandlers = {
         // Validate submission to save tokens:
         // - prevent duplicates, - prevent empty selections, - prevent debounce spam
         if (!State.selectedText || State.selectedText === State.lastSelectedText || State.enterCooldown) {
+            console.log("CHILL OUT");
             return;
         }
 
@@ -261,7 +262,7 @@ const EventHandlers = {
                     Logger.error('Unknown page:', State.currentPage);
             }
         } finally {
-            setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 1.5s until enterCooldown flag reset
+            setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 2.0s until enterCooldown flag reset
         }
         console.log(activeTab.conversationHistory.length);
     },
@@ -287,7 +288,7 @@ const EventHandlers = {
         } else {
             State.tabs.unshift({
                 id: 'tab_0',
-                name: 'Welcome',
+                name: 'Info',
                 content: '',
                 parsing: false,
                 conversationHistory: [{ role: 'system', content: SYSTEM_PROMPT }],
@@ -520,9 +521,9 @@ const UI = {
         // Set tab icon
         const fileIcon = document.createElement('img');
         if (tab.id === 'tab_0') {
-            fileIcon.src = './images/ParserPro.png'; 
+            fileIcon.src = 'images/ParserPro.png'; 
         } else {
-            fileIcon.src = './images/file.png';
+            fileIcon.src = 'images/file.png';
         }
         fileIcon.className = 'file-icon';
         fileIcon.alt = '';
@@ -622,6 +623,7 @@ const AI = {
             });
             // ====================================================
 
+            // Save response and classify error types (server side)
             if (!response.ok) {
                 if (response.status === 429) {
                     throw new Error('RATE_LIMIT');
@@ -633,13 +635,10 @@ const AI = {
                     throw new Error(`HTTP_ERROR_${response.status}`);
                 }            
             }
-
             const completion = await response.json();
-            
             if (!completion?.choices?.[0]?.message?.content) {
                 throw new Error('INVALID_RESPONSE');
             }
-            
             const aiResponse = completion.choices[0].message.content.trim();
             
             // If user did not submit code/history not saved, don't append AI repsonse to history
@@ -654,8 +653,22 @@ const AI = {
                 Logger.info('API request cancelled'); // Record AbortController errors
                 return null;
             }
+
+            // Return error messages based on type
+            if (error.message === 'RATE_LIMIT') {
+                return 'ERROR_RATE_LIMIT';
+            } else if (error.message === 'AUTH_ERROR') {
+                return 'ERROR_AUTH';
+            } else if (error.message.startsWith('HTTP_ERROR_')) {
+                return `ERROR_HTTP_${error.message.split('_')[2]}`;
+            } else if (error.message === 'INVALID_RESPONSE') {
+                return 'ERROR_INVALID_RESPONSE';
+            } else if (error.message === 'SERVER_ERROR') {
+                return 'ERROR_SERVER';
+            }
+
             Logger.error('AI API Error:', error);
-            return null;
+            return 'ERROR_UNKNOWN';
         } finally {
             State.currentAbortController = null;
         }
@@ -678,7 +691,7 @@ const PageHandlers = {
         ## **Key Concepts** 
         - Main programming concepts used
         ## **Line-By-Line** 
-        - Line by line breakdown translating what each line does (MUST use code blocks)
+        - Show each line of code in a separate code block, followed by a detailed explanation (not in a list)       
 
         Use markdown formatting. Be direct and technical - no conversational fluff.
         Add a space between each bullet point (-).
@@ -687,9 +700,15 @@ const PageHandlers = {
 
         UI.sendToIframe({ explanation: 'Generating response...' });
         const explanation = await AI.call(prompt, true);
-        if (explanation) {
+        
+        // Send error message (formatted by call function) or send explanation
+        if (explanation && explanation.startsWith('ERROR_')) {
+            const errorMsg = this._formatError(explanation);
+            UI.sendToIframe({ explanation: errorMsg });
+        } else if (explanation) {
             UI.sendToIframe({ explanation });
         }
+        console.log(explanation);
     },
     
     // CASE 2: Visualization page - Detect sorting algorithm and extract array
@@ -702,11 +721,11 @@ const PageHandlers = {
         Only the word should be returned. If no sorting algorithm is found, respond with: default`;
         
         let algorithm = await AI.call(algorithmPrompt, false);
-        algorithm = algorithm?.toLowerCase().trim() || 'default'; //In case AI gives inconsistent case-
+        algorithm = algorithm?.toLowerCase().trim() || 'default'; //In case AI gives inconsistent case
 
-        // ERROR: Pass error state to frame
+        // Client-side ERROR: Pass error state to frame
         if (!algorithm || algorithm === 'default') {
-            UI.sendToIframe({ visualization: 'No sorting algorithm detected in the highlighted code.' });
+            UI.sendToIframe({ visualization: 'Failed to extract and visualize sorting algorithm.' });
             return;
         }
 
@@ -753,12 +772,26 @@ const PageHandlers = {
         // ERROR: Pass error state to frame
         if (!complexity || complexity === 'MISSING CODE') {
             UI.sendToIframe({ explanation: 'Failed to analyze time complexity.' });
-            return;
-        }
         // SUCCESS: Pass successful output state to frame
-        if (complexity) {
+        } else {         
             UI.sendToIframe({ explanation: complexity });
         }
+    },
+    // ERROR HANDLING
+    _formatError(errorCode) {
+        const errorMessages = {
+            'ERROR_RATE_LIMIT': '⚠ **Rate Limit Reached**\n\nYou\'ve used all your API tokens. Please try again later.',
+            'ERROR_AUTH': '⚠ **Authentication Error**\n\nAPI authentication failed.',
+            'ERROR_SERVER': '⚠ **Server Error**\n\nThe AI service is currently unavailable. Please try again in a few moments.',
+            'ERROR_INVALID_RESPONSE': '⚠ **Invalid Response**\n\nReceived an unexpected response from the AI. Please try again.',
+            'ERROR_UNKNOWN': '⚠ **Unknown Error**\n\nAn unexpected error occurred. Please try again.'
+        };
+        
+        if (errorCode.startsWith('ERROR_HTTP_')) {
+            return `⚠ **HTTP Error: ${errorCode}**\n\nThe request failed with status code ${errorCode}. The Server URL may have changed!.`;
+        }
+        
+        return errorMessages[errorCode] || errorMessages['ERROR_UNKNOWN'];
     }
 };
 

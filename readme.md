@@ -1,7 +1,7 @@
 # ParserPro
 
 ## Overview
-An AI-Driven code parser with a built-in DSA visualizer and tree generator made for EmoryHacks
+ParserPro is a web-based feature-rich code analyzer 
 
 ## Features
 

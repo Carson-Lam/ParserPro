@@ -1,59 +1,57 @@
 /* Reset and Base Styles */
-html,
-body {
-    display: flex;
-    flex-direction: column;
+* {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: black;
+    color: #d4d4d4;
+    overflow-x: hidden;
 }
 
 /* Navbar Styling */
 .navbar {
-    position: sticky;
-    background-color: #181818;
-    overflow: hidden;
+    position: fixed;
     top: 0;
     width: 100%;
-    z-index: 1000;
     height: 50px;
+    background-color: #181818;    
+    border-bottom: 1px solid #2c2c2c;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
 }
 
 .navbar a {
-    float: left;
-    display: block;
-    color: grey;
-    text-align: center;
+    display: inline-block;
     padding: 14px 20px;
+    color: #858585;
     text-decoration: none;
     font-size: 16px;
-    line-height: 22px;
-    transition: color 0.3s ease, text-decoration 0.3s ease;
+    transition: color 0.2s ease;
 }
 
 .navbar a:hover {
     color: #fff;
 }
 
-.navbar a:active {
-    text-decoration: underline;
-    text-decoration-color: #0078d7;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 5px;
-}
 
 .navbar a.current {
-    color: #fff;
+    color: #ffffff;
     text-decoration: underline;
-    text-decoration-color: #0078d7;
+    text-decoration-color: #007acc;
     text-decoration-thickness: 1px;
     text-underline-offset: 5px;
 }
 
 /* Main Content Area */
 .main-content {
-    margin: 10px 20px 20px 20px;
+    margin: 60px 20px 20px 20px;
     max-width: 100%;
 }
 
@@ -190,21 +188,30 @@ body::-webkit-scrollbar-thumb:hover {
 }
 
 /* AI Text Styling */
+/* This is necessary becuase of the css reset */
 .ai-text {
     color: white;
     font-style: normal;
     line-height: 2rem;
 }
 
+.ai-text p{
+    margin: 15px 0px;
+}
+
 .ai-text h1 {
     color: #007acc;
-    margin-bottom: 0px;
+    margin: 20px 0px;
 }
 
 .ai-text h2,
 .ai-text h3 {
     color: #90c0e0;
-    margin-bottom: 0px;
+    margin: 15px 0px;
+}
+
+.ai-text ul {
+    padding-left: 20px; 
 }
 
 .ai-text ul li::marker {
@@ -218,7 +225,11 @@ body::-webkit-scrollbar-thumb:hover {
     overflow-x: auto;
 }
 
-/* Syntax Highlighting Classes */
+.ai-text.error {
+    color: #ff6b6b !important;
+}
+
+/* Syntax Highlighting Classes
 .comment {
     color: #6a9955;
     font-style: italic;
@@ -264,4 +275,4 @@ body::-webkit-scrollbar-thumb:hover {
 
 .semicolon {
     color: #d4d4d4;
-}
+} */

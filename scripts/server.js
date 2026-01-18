@@ -42,8 +42,8 @@ app.post('/parse', async (req, res) => {
     }
 });
 
-app.post('/',  async (req, res) => {
-    res.json('Server is running');
+app.get('/',  async (req, res) => {
+    res.json({ message: 'Server is running' });
 });
 
 app.listen(port, () => {
