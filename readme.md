@@ -2,7 +2,7 @@
 
 AI-powered code analyzer for instant explanations, visualizations, and complexity analysis.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)]()
+[![Live](https://img.shields.io/badge/ParserePro-live-brightgreen)](https://parserpro.vercel.app/)
 
 ## Overview
 
@@ -31,7 +31,7 @@ ParserPro is a web-based code analysis tool built with vanilla JavaScript, HTML,
 
 ## Quick Start
 
-**Live Version:** [Try ParserPro Now]()
+**Live Version:** [Try ParserPro Now](https://parserpro.vercel.app/)
 
 **Local Development:** Want to run locally? [Contact me](mailto:lamcn51@gmail.com) for setup instructions.
 
@@ -47,7 +47,7 @@ index.html (parent)
 
 **Communication Flow:**
 1. User highlights code in parent window
-2. Parent sends code to backend API
+2. Parent sends code to backend API (Vercel /api/parse)
 3. AI processes request (Groq LLM)
 4. Parent forwards results to active iframe via `postMessage`
 5. Iframe renders visualization/analysis
@@ -63,7 +63,7 @@ index.html (parent)
 - [**Marked.js**](https://marked.js.org/) - Markdown rendering for AI responses
 
 #### Backend
-- **Express.js** - API routing and server
+- **Express.js** - API routing and server for local development
 - **Groq API** - LLM inference ([llama-3.3-70b-versatile](https://console.groq.com/docs/model/llama-3.3-70b-versatile))
 
 #### Fonts

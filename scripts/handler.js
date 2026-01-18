@@ -4,7 +4,7 @@ const CONFIG = {
     MAX_FILE_SIZE: 1000,
     MAX_HISTORY_ITEMS: 10,
     DEBOUNCE_DELAY: 2000,
-    API_ENDPOINT: '/parse',
+    API_ENDPOINT: '/api/parse',
     MODEL: 'llama-3.3-70b-versatile'
 };
 
@@ -596,10 +596,12 @@ const AI = {
         const { conversationHistory, fileContext } = activeTab;
         
         const messagesToSend = persistHistory 
+            // If history is kept, attach conversationHistory (spread) into set
             ? [ ...conversationHistory, 
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: State.selectedText }]
-            : [ // If history is not kept, don't use conversationHistory array
+            // If history is not kept, don't use conversationHistory array
+            : [ 
                 { role: 'system', content: SYSTEM_PROMPT },
                 { role: 'system', content: `The user has submitted code for analysis. Consider this context when explaining highlighted sections:\n\n${fileContext}` },
                 { role: 'system', content: systemPrompt },
