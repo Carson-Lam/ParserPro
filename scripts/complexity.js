@@ -61,7 +61,7 @@ function showLoadingState() {
 function showErrorState(message) {
     analysisContainer.innerHTML = `
         <div class="empty-state">
-            <div class="empty-state-icon-error*">⚠</div>
+            <div class="empty-state-icon-error">⚠</div>
             <div class="empty-state-text-error">${message}</div>
         </div>
     `;
