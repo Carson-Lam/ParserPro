@@ -4,7 +4,7 @@ const CONFIG = {
     MAX_FILE_SIZE: 1000,
     MAX_HISTORY_ITEMS: 10,
     DEBOUNCE_DELAY: 2000,
-    API_ENDPOINT: '/api/parse',
+    API_ENDPOINT: 'https://parserpro.onrender.com/parse', // /api/parse, https://parserpro.onrender.com/parse
     MODEL: 'llama-3.3-70b-versatile'
 };
 
@@ -250,7 +250,7 @@ const EventHandlers = {
         // Validate submission to save tokens:
         // - prevent duplicates, - prevent empty selections, - prevent debounce spam
         if (!State.selectedText || State.selectedText === State.lastSelectedText || State.enterCooldown) {
-            console.log("CHILL OUT");
+            console.log("Stopped Duplicate/Empty/Repeated submission!");
             return;
         }
 
@@ -274,7 +274,7 @@ const EventHandlers = {
         } finally {
             setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 2.0s until enterCooldown flag reset
         }
-        console.log(activeTab.conversationHistory.length);
+        console.log("Conversation Length: ", activeTab.conversationHistory.length);
     },
 
     // Handle mobile analyze button click submission, forward to to "enter key"
@@ -738,7 +738,7 @@ const PageHandlers = {
         } else if (explanation) {
             UI.sendToIframe({ explanation });
         }
-        console.log(explanation);
+        // console.log(explanation);
     },
     
     // CASE 2: Visualization page - Detect sorting algorithm and extract array
@@ -808,7 +808,7 @@ const PageHandlers = {
         - How to improve it
 
         Use markdown formatting. Be technical and concise.
-        If input is not code, respond with "MISSING CODE".`;
+        If input is not code, ONLY respond with "MISSING CODE".`;
         
         UI.sendToIframe({ explanation: 'Analyzing complexity...' });
         const complexity = await AI.call(complexityPrompt, false);

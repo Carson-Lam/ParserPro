@@ -34,7 +34,7 @@ window.addEventListener('message', function(event) {
             showLoadingState();
         } 
         // Show error state on UI
-        else if (content.startsWith('⚠')) {
+        else if (typeof content === 'string' &&content.startsWith('⚠')) {
             showErrorState(content);
         }
         else {
@@ -61,7 +61,7 @@ function showLoadingState() {
 function showErrorState(message) {
     analysisContainer.innerHTML = `
         <div class="empty-state">
-            <div class="empty-state-icon-error">⚠</div>
+            <div class="empty-state-icon-error*">⚠</div>
             <div class="empty-state-text-error">${message}</div>
         </div>
     `;

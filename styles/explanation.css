@@ -5,6 +5,13 @@
     box-sizing: border-box;
 }
 
+.navbar,
+.navbar a
+{
+    cursor: default !important;
+    user-select: none;
+}
+
 html,
 body {
     height: 100%;

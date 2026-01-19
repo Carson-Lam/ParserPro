@@ -43,7 +43,7 @@ window.addEventListener('message', function(event) {
             showLoadingState();
         } 
         // Show error state on UI
-        else if (content.startsWith('⚠')) {
+        else if (typeof content === 'string' && content.startsWith('⚠')) {
             showErrorState(content);
         } 
         else {
