@@ -43,7 +43,7 @@ window.addEventListener('message', function(event) {
             showLoadingState();
         } 
         // Show error state on UI
-        else if (content === 'No sorting algorithm detected in the highlighted code.'){
+        else if (content.startsWith('⚠')) {
             showErrorState(content);
         } 
         else {
@@ -69,8 +69,8 @@ function showLoadingState() {
 function showErrorState(message) {
     arrayContainer.innerHTML = `
         <div class="empty-state">
-            <div class="empty-state-icon">⚠</div>
-            <div class="empty-state-text">${message}</div>
+            <div class="empty-state-icon-error">⚠</div>
+            <div class="empty-state-text-error">${message}</div>
         </div>
     `;
     statusMessage.classList.add('error');    
@@ -473,7 +473,7 @@ function generateAndSort(algorithm, arrayDataStr) {
                 .filter(n => !isNaN(n));
             
             if (array.length === 0) {
-                showErrorState('No valid array data found');
+                showErrorState('No valid array data found!');
                 return;
             }
             

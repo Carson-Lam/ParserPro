@@ -34,7 +34,7 @@ window.addEventListener('message', function(event) {
             showLoadingState();
         } 
         // Show error state on UI
-        else if (content === 'Failed to analyze time complexity.' ) {
+        else if (content.startsWith('⚠')) {
             showErrorState(content);
         }
         else {
@@ -61,8 +61,8 @@ function showLoadingState() {
 function showErrorState(message) {
     analysisContainer.innerHTML = `
         <div class="empty-state">
-            <div class="empty-state-icon">⚠</div>
-            <div class="empty-state-text">${message}</div>
+            <div class="empty-state-icon-error">⚠</div>
+            <div class="empty-state-text-error">${message}</div>
         </div>
     `;
     statusMessage.classList.add('error');

@@ -753,9 +753,13 @@ const PageHandlers = {
         let algorithm = await AI.call(algorithmPrompt, false);
         algorithm = algorithm?.toLowerCase().trim() || 'default'; //In case AI gives inconsistent case
 
-        // Client-side ERROR: Pass error state to frame
-        if (!algorithm || algorithm === 'default') {
-            UI.sendToIframe({ visualization: 'Failed to extract and visualize sorting algorithm.' });
+        // Check for errors, format error message, send to frame
+        // Two types of error: Client side (No algo highlighted), Server Side (reequest fails)
+        if (!algorithm || algorithm === 'default' || algorithm?.startsWith('ERROR_')) {
+            const errorMsg = algorithm?.startsWith('ERROR_') 
+                ? this._formatError(algorithm)
+                : '⚠ No sorting algorithm detected in the highlighted code.'; 
+            UI.sendToIframe({ visualization: errorMsg });
             return;
         }
 
@@ -766,6 +770,16 @@ const PageHandlers = {
         Respond with ONLY the array values, comma separated, no brackets or extra text.`;
 
         const arrayData = await AI.call(arrayPrompt, false);
+
+        // Check for errors, format error message, send to frame
+        // Two types of error: Client side (No algo highlighted), Server Side (reequest fails)
+        if (!arrayData || arrayData?.startsWith('ERROR_')) { 
+            const errorMsg = arrayData?.startsWith('ERROR_')
+                ? this._formatError(arrayData)
+                : '⚠ Failed to extract array data from code.';
+            UI.sendToIframe({ visualization: errorMsg });
+            return;
+        }
         
         // SUCCESS: Pass successful output state to frame
         if (arrayData) {
@@ -799,9 +813,12 @@ const PageHandlers = {
         UI.sendToIframe({ explanation: 'Analyzing complexity...' });
         const complexity = await AI.call(complexityPrompt, false);
     
-        // ERROR: Pass error state to frame
-        if (!complexity || complexity === 'MISSING CODE') {
-            UI.sendToIframe({ explanation: 'Failed to analyze time complexity.' });
+        // ERROR: Check for error codes and format them
+        if (!complexity || complexity === 'MISSING CODE' || complexity?.startsWith('ERROR_')) {
+            const errorMsg = complexity?.startsWith('ERROR_') 
+                ? this._formatError(complexity)         // Formatted message with code
+                : '⚠ Failed to analyze time complexity.'; // Default message
+            UI.sendToIframe({ explanation: errorMsg });
         // SUCCESS: Pass successful output state to frame
         } else {         
             UI.sendToIframe({ explanation: complexity });
@@ -810,15 +827,15 @@ const PageHandlers = {
     // ERROR HANDLING
     _formatError(errorCode) {
         const errorMessages = {
-            'ERROR_RATE_LIMIT': '⚠ **Rate Limit Reached**\n\nYou\'ve used all your API tokens. Please try again later.',
-            'ERROR_AUTH': '⚠ **Authentication Error**\n\nAPI authentication failed.',
-            'ERROR_SERVER': '⚠ **Server Error**\n\nThe AI service is currently unavailable. Please try again in a few moments.',
-            'ERROR_INVALID_RESPONSE': '⚠ **Invalid Response**\n\nReceived an unexpected response from the AI. Please try again.',
-            'ERROR_UNKNOWN': '⚠ **Unknown Error**\n\nAn unexpected error occurred. Please try again.'
+            'ERROR_RATE_LIMIT': '⚠ Rate Limit Reached! \n\nYou\'ve used all your API tokens. Please try again later.',
+            'ERROR_AUTH': '⚠ Authentication Error! \n\nAPI authentication failed.',
+            'ERROR_SERVER': '⚠ Server Error! \n\nThe AI service is currently unavailable. Please try again in a few moments.',
+            'ERROR_INVALID_RESPONSE': '⚠ Invalid Response! \n\nReceived an unexpected response from the AI. Please try again.',
+            'ERROR_UNKNOWN': '⚠ Unknown Error! \n\nAn unexpected error occurred. Please try again.'
         };
         
         if (errorCode.startsWith('ERROR_HTTP_')) {
-            return `⚠ **HTTP Error: ${errorCode}**\n\nThe request failed with status code ${errorCode}. The Server URL may have changed!.`;
+            return `⚠ HTTP Error: ${errorCode}!\n\nThe request failed to reach the server. The Server URL may have changed!`;
         }
         
         return errorMessages[errorCode] || errorMessages['ERROR_UNKNOWN'];

@@ -232,6 +232,19 @@ body {
     font-weight: 700;
 }
 
+/* Error states */
+.empty-state-text-error {
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.empty-state-icon-error {
+    color: #ff6b6b;
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
 .empty-state-text.active{
     color: #007acc;
     animation: pulse 5.0s ease-in-out infinite !important;
