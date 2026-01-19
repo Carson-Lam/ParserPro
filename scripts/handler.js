@@ -46,7 +46,8 @@ const State = {
     lastSelectedText: '',
     enterCooldown: false,
     currentPage: PAGE_TYPES.EXPLANATION,
-    currentAbortController: null
+    currentAbortController: null,
+    frozenSelection: ''
 };
 
 window.currentPage = State.currentPage;
@@ -285,7 +286,11 @@ const EventHandlers = {
 
     // Handle highlighted text, ensuring that highlighted text is within code box
     _checkHighlightedText() {
-        const selection = window.getSelection().toString();
+        let selection = window.getSelection().toString();
+
+        if (!selection && frozenSelection) {
+            selection = frozenSelection;
+        }
         const highlightArea = DOM.get('highlightArea');
         
         // Check if highlighted text is in the highlight area and if anything is highlighted
@@ -489,7 +494,7 @@ const TabOperations = {
                 codeEl.innerHTML = Prism.highlight(tab.content, Prism.languages.javascript, 'javascript');
             }
             if (toggleButton) {
-                toggleButton.textContent = '⮜';
+                toggleButton.textContent = '◀';
                 toggleButton.dataset.mode = 'edit';
             }
         // New tab was in editing state
@@ -506,7 +511,7 @@ const TabOperations = {
                 codeEl.value = tab.content;
             }
             if (toggleButton) {
-                toggleButton.textContent = '⮞';
+                toggleButton.textContent = '▶';
                 toggleButton.dataset.mode = 'parse';
             }
         }
@@ -863,8 +868,19 @@ function attachEventListeners() {
     DOM.get('infoButton')?.addEventListener('click', EventHandlers.infoClick);
 
     // MOBILE SUPPORT 
-    // Mobile analyze button
-    DOM.get('mobileAnalyzeBtn')?.addEventListener('click', EventHandlers.mobileAnalyzeClick);
+    // =========================================================================
+    const mobileBtn = DOM.get('mobileAnalyzeBtn');
+    if (mobileBtn) {
+        // Freeze selection before mobile browser clears it
+        mobileBtn.addEventListener('touchstart', () => {
+            frozenSelection = window.getSelection().toString();
+        }, { passive: true });
+        mobileBtn.addEventListener('mousedown', () => {
+            frozenSelection = window.getSelection().toString();
+        });
+        mobileBtn.addEventListener('click', EventHandlers.mobileAnalyzeClick);
+    }
+    // =========================================================================
 
     document.addEventListener('keydown', EventHandlers.keyDown);
     window.addEventListener('message', EventHandlers.pageMessage);

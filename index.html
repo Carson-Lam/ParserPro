@@ -16,8 +16,8 @@
         <div class="top-bar">
             <div id="tabContainer" class="tab-bar"></div>
             <div class="button-group">
-                <button id="toggleParseButton" data-mode="parse">⮞</button>
-                <button id="infoButton"> 🛈 </button>
+                <button id="toggleParseButton" data-mode="parse">▶</button>
+                <button id="infoButton"> &#9432; </button>
             </div>
         </div>
 
@@ -34,7 +34,7 @@
                 <div class="welcome-content">
                     <div class="welcome-header">
                         <h1>ParserPro</h1>
-                        <p class="welcome-subtitle">AI-Powered Code Analysis</p>
+                        <p>AI-Powered Code Analysis</p>
                     </div>
 
                     <div class="welcome-sections">
@@ -43,11 +43,11 @@
                                 <h2>Start</h2>
                                 <div class="welcome-actions">
                                     <button class="welcome-action" id="welcomeNewTab">
-                                        <span class="action-icon">🗎</span>
-                                        <span class="action-text">Get Started...</span>
+                                        <span class="action-icon">&#128462;</span>
+                                        <a class="action-text">Get Started...</a>
                                     </button>
                                     <button class="welcome-action" id="welcomeGetStarted">
-                                        <span class="action-icon">🛈</span>
+                                        <span class="action-icon">&#9432;</span>
                                         <a class="action-text" href="https://github.com/Carson-Lam/ParserPro#readme">Learn More...</a>
                                     </button>
                                 </div>
@@ -56,8 +56,8 @@
                                 <h2>How to Use</h2>
                                 <ol class="welcome-steps">
                                     <li>Write or paste your code in the editor</li>
-                                    <li>Click parse <strong>[⮞]</strong> to analyze</li>
-                                    <li>Highlight any code section and press <kbd>Enter</kbd></li>
+                                    <li>Click parse <strong> ▶ </strong> to analyze</li>
+                                    <li>Highlight any code section and press <kbd>Enter</kbd> / <strong> &#x23CE; </strong> on mobile</li> 
                                     <li>Navigate between analysis tabs to explore results</li>
                                 </ol>
                             </div>
@@ -112,7 +112,7 @@
         </div>
     </div>
 
-    <button id="mobileAnalyzeBtn" aria-label="Analyze code">▶</button>
+    <button id="mobileAnalyzeBtn" aria-label="Analyze code">&#x23CE;</button>
     
     <!--Script-->
     <script src="./scripts/handler.js"></script>

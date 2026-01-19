@@ -269,7 +269,7 @@ hr {
     color: var(--vscode-text);
 }
 
-.welcome-subtitle {
+.welcome-header p {
     font-size: 1.5rem;
     color: var(--vscode-line-number);
 }
@@ -326,6 +326,7 @@ hr {
 .action-text {
     color: inherit; 
     text-decoration: none;
+    cursor: pointer;
 }
 
 .welcome-action:hover {
@@ -643,6 +644,12 @@ hr {
     .welcome-sections {
         grid-template-columns: 1fr;
         gap: 3vh;
+    }
+    .welcome-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;    
     }
 }
 
