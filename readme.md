@@ -69,6 +69,7 @@ index.html (parent)
 #### Fonts
 - Segoe UI (interface)
 - Consolas (code blocks)
+- Russo One (Stage UI)
 
 ## License
 

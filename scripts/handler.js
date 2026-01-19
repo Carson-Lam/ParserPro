@@ -211,6 +211,11 @@ const EventHandlers = {
 
             // Give parsing state to iframe
             UI.sendToIframe({ parsingState: true });
+
+            // MOBILE SUPPORT:
+            // Generate mobile analyze button if: Parsing mode, Not welcome page, Touch device
+            const mobileBtn = DOM.get('mobileAnalyzeBtn');
+            if (mobileBtn && activeTab.id !== 'tab_0' && (('ontouchstart' in window) || (navigator.maxTouchPoints > 0))) mobileBtn.classList.add('visible');
         
         // Edit mode enter
         } else { 
@@ -227,6 +232,11 @@ const EventHandlers = {
 
             // Give parsing state to iframe
             UI.sendToIframe({ parsingState: false });
+
+            // MOBILE SUPPORT:
+            // Remove mobile analyze button in edit mode
+            const mobileBtn = DOM.get('mobileAnalyzeBtn');
+            if (mobileBtn) mobileBtn.classList.remove('visible');
         }
     },
 
@@ -265,6 +275,12 @@ const EventHandlers = {
             setTimeout(() => { State.enterCooldown = false; }, CONFIG.DEBOUNCE_DELAY); // Debounce time of 2.0s until enterCooldown flag reset
         }
         console.log(activeTab.conversationHistory.length);
+    },
+
+    // Handle mobile analyze button click submission, forward to to "enter key"
+    mobileAnalyzeClick() {
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+        document.dispatchEvent(enterEvent);
     },
 
     // Handle highlighted text, ensuring that highlighted text is within code box
@@ -352,6 +368,7 @@ const EventHandlers = {
             document.addEventListener('mouseup', onUp);
         });
     },
+
 };
 
 // =========================== TAB OPERATIONS ===================================
@@ -394,6 +411,17 @@ const TabOperations = {
         // Update iframe to match new tab's parsing state
         UI.sendToIframe({ parsingState: newTab.parsing });
         EventHandlers.updateWelcomeVisibility();
+
+        // MOBILE SUPPORT:
+        // Keep analyze button if switching to parsing tab, hide if switching to edit tab
+        const mobileBtn = DOM.get('mobileAnalyzeBtn');
+        if (mobileBtn) {
+            if (newTab.parsing && newTab.id !== 'tab_0' && (('ontouchstart' in window) || (navigator.maxTouchPoints > 0))) {
+                mobileBtn.classList.add('visible');
+            } else {
+                mobileBtn.classList.remove('visible');
+            }
+        }
     },
 
     // Close tabs: -Don't close if only 1, -Swap to rightmost tab in index (Math.max) if current closed
@@ -816,6 +844,10 @@ function attachEventListeners() {
     DOM.get('welcomeNewTab')?.addEventListener('click', EventHandlers.welcomeNewTab);
     DOM.get('toggleParseButton')?.addEventListener('click', EventHandlers.toggleParseMode);
     DOM.get('infoButton')?.addEventListener('click', EventHandlers.infoClick);
+
+    // MOBILE SUPPORT 
+    // Mobile analyze button
+    DOM.get('mobileAnalyzeBtn')?.addEventListener('click', EventHandlers.mobileAnalyzeClick);
 
     document.addEventListener('keydown', EventHandlers.keyDown);
     window.addEventListener('message', EventHandlers.pageMessage);

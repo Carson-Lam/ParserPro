@@ -635,9 +635,49 @@ hr {
 }
 
 /* ==================== RESPONSIVENESS ==================== */
+
+/* Stack welcome sections */
 @media (max-width: 900px) {
     .welcome-sections {
         grid-template-columns: 1fr;
         gap: 3vh;
     }
+}
+
+/* Mobile Analyze button (No Enter Key) */
+#mobileAnalyzeBtn {
+    display: none;
+    position: fixed;
+    bottom: 48vh;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: #007acc;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    font-size: 2rem;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 122, 204, 0.4);
+    cursor: pointer;
+    z-index: 1000;
+}
+#mobileAnalyzeBtn:active {
+    transform: scale(0.95);
+}
+
+#mobileAnalyzeBtn.visible {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Stack footer */
+@media (max-width: 600px) {
+    .welcome-footer {
+        flex-direction: column;
+        gap: 8px;
+        padding: 2vh 0px;
+    }
+
 }

@@ -229,50 +229,12 @@ body::-webkit-scrollbar-thumb:hover {
     color: #ff6b6b !important;
 }
 
-/* Syntax Highlighting Classes
-.comment {
-    color: #6a9955;
-    font-style: italic;
-}
+/* ==================== RESPONSIVENESS ==================== */
 
-.keyword {
-    color: #569cd6;
-    font-weight: bold;
-}
 
-.keyword-void {
-    color: #4ec9b0;
-    font-weight: bold;
+@media (max-width: 768px) {
+    /* Update ASCII art on small screens*/
+    .header-override {
+        font-size: 9px !important;
+    }
 }
-
-.method-name {
-    color: #dcdcaa;
-}
-
-.class-name {
-    color: #4ec9b0;
-}
-
-.variable {
-    color: white;
-}
-
-.parentheses {
-    color: #ff69b4;
-}
-
-.braces {
-    color: #ff69b4;
-}
-
-.methodParentheses {
-    color: #ebc00a;
-}
-
-.methodBraces {
-    color: #ebc00a;
-}
-
-.semicolon {
-    color: #d4d4d4;
-} */

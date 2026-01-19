@@ -69,37 +69,58 @@ function showErrorState(message) {
     statusMessage.textContent = 'Error occurred';
 }
 
+// function resetToEmptyState() {
+//     analysisContainer.innerHTML = `
+//         <div class="empty-state">
+//             <div class="empty-state-text">
+//  _____ ____ ___ _____ ___ _   _  ____   ____ _____  _    ____ _____ 
+// | ____|  _ \\_ _|_   _|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
+// |  _| | | | | |  | |  | ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
+// | |___| |_| | |  | |  | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
+// |_____|____/___| |_| |___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
+//             </div>
+//         </div>
+//     `;
+//     statusMessage.classList.remove('error', 'active');
+//     statusMessage.textContent = 'Awaiting Input!';
+// }
+
 function resetToEmptyState() {
     analysisContainer.innerHTML = `
         <div class="empty-state">
             <div class="empty-state-text">
- _____ ____ ___ _____ ___ _   _  ____   ____ _____  _    ____ _____ 
-| ____|  _ \\_ _|_   _|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
-|  _| | | | | |  | |  | ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
-| |___| |_| | |  | |  | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
-|_____|____/___| |_| |___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
+                EDITING STAGE
             </div>
         </div>
     `;
     statusMessage.classList.remove('error', 'active');
     statusMessage.textContent = 'Awaiting Input!';
 }
-    function resetToParsingState(){
+function resetToParsingState(){
+
+// if (analysisContainer) {
+//     analysisContainer.innerHTML = `
+//         <div class="empty-state">
+//             <div class="empty-state-text active">
+//  ____   _    ____  ____ ___ _   _  ____   ____ _____  _    ____ _____ 
+// |  _ \\ / \\  |  _ \\/ ___|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
+// | |_) / _ \\ | |_) \\___ \\| ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
+// |  __/ ___ \\|  _ < ___) | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
+// |_| /_/   \\_\\_| \\_\\____/___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
+//             </div>
+//         </div>
+//     `;
+// }
 
 if (analysisContainer) {
     analysisContainer.innerHTML = `
         <div class="empty-state">
             <div class="empty-state-text active">
- ____   _    ____  ____ ___ _   _  ____   ____ _____  _    ____ _____ 
-|  _ \\ / \\  |  _ \\/ ___|_ _| \\ | |/ ___| / ___|_   _|/ \\  / ___| ____|
-| |_) / _ \\ | |_) \\___ \\| ||  \\| | |  _  \\___ \\ | | / _ \\| |  _|  _|  
-|  __/ ___ \\|  _ < ___) | || |\\  | |_| |  ___) || |/ ___ \\ |_| | |___ 
-|_| /_/   \\_\\_| \\_\\____/___|_| \\_|\\____| |____/ |_/_/   \\_\\____|_____|
+                PARSING STAGE
             </div>
         </div>
     `;
 }
-
     statusMessage.classList.add('active');
     statusMessage.textContent = 'Awaiting Input!';
 }
