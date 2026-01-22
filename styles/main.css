@@ -292,7 +292,7 @@ hr {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 3vh;
+    gap: 3.5vh;
 }
 
 .welcome-section h2 {
