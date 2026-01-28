@@ -11,7 +11,9 @@ module.exports = async (req, res) => {
     }
 
     // Allow uptimerobot ping
-    if (req.method === 'HEAD') return res.status(200).end();
+    if (req.method === 'HEAD') {
+        return res.status(200).end();
+    }
 
     // Don't allow anything else
     if (req.method !== 'POST') {
@@ -22,7 +24,7 @@ module.exports = async (req, res) => {
     const apiKey = process.env.GROQ_API_KEY;
     const url = `https://api.groq.com/openai/v1/chat/completions`;
 
-    try {
+    try {   
         // Axios block
         // Axios syntax: {URL, body(key1, key2), headers}
         const response = await axios.post(
@@ -35,10 +37,10 @@ module.exports = async (req, res) => {
                 }
             }
         );
-        res.status(200).json(response.data);
+        return res.status(200).json(response.data);
     } catch(error) {
         console.error('Groq API Error:', error.response?.data || error.message);
-        res.status(500).json({
+        return res.status(500).json({
             error: 'Error fetching data from AI API',
             details: error.response?.data || error.message
         });
