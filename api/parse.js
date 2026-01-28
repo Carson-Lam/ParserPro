@@ -2,14 +2,14 @@ const axios = require('axios');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // Handle browser preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    
+
     // Allow uptimerobot ping
     if (req.method === 'HEAD') return res.status(200).end();
 
